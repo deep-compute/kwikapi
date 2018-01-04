@@ -37,6 +37,11 @@ setup(
     author='Deep Compute, LLC',
     author_email='contact@deepcompute.com',
     install_requires=[
+    'django==1.9',
+    'msgpack-python',
+    'python-rapidjson',
+    'structlog',
+    'coloredlogs'
     ],
     classifiers=[
         'Environment :: Web Environment',
