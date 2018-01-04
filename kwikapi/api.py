@@ -9,6 +9,7 @@ import traceback
 import rapidjson
 import importlib
 import builtins
+import coloredlogs
 from itertools import chain
 from structlog import get_logger
 
@@ -259,7 +260,6 @@ class MessagePackProtocol(BaseProtocol):
     def get_mime_type():
         return 'application/x-msgpack'
 
-import coloredlogs
 
 class API(object):
     """
