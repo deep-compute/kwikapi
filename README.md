@@ -24,7 +24,7 @@ python manage.py startapp polls(change polls and use your own application name)
 
 - Open `yadatest/urls.py` and add these statements
 ```bash
-from django.conf.urls import
+from django.conf.urls import include
 ```
 - Add below statement in `urlpatterns`
 ```bash
