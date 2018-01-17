@@ -1,4 +1,4 @@
-# kwikapi usage
+# kwikapi
 ### What is kwikapi
 An api, which processes any (Ex: Django, Tornado) kind of requests
 
