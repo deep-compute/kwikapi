@@ -80,6 +80,7 @@ True
 True
 
 ```
+> You can also register same methods with same namespace with different versions
 
 ## Run test cases
 ```bash
