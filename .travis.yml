@@ -1,14 +1,14 @@
 language: python
 python:
 - '3.5'
-install: 
+install:
 - pip install .
 script:
 - python -m doctest -v README.md
 deploy:
 - provider: releases
   skip_cleanup: true
-  api-key:
+  api_key:
     secure: rIFvFpdkxSDktSHJaO4h69Zr70o4ChU2l6YlZiou1INVlyWkTGcwI4FdJ4Xdo7PGF188mWH8gk8nfiUwPq8U0YV07e0kXCiCGmCixQJBlBYSEWZIXa6wgyh9BDwZL1Ca9kBkV1wyTYT0fbUR68+Zvpx5SIqQGhyiZlLEDhqAN4CopzYI5NNTGu4ayBLyMcQorQlV6K8Knm6cKxaf3MXK+3iDvyYDkUteiDo7UPd/D8fsGhDPHZKOR260UiVfFrFE1ef8RuxG01G2Y+Bv+nR9hYhLV030D9nwAEjnlCvG9mRx0Sw44ptsNPar34mtr7XAPjnTgcVa7hhyLKgXeoyhijQ1rJIcBDYUMQa3S+Wm0JDe0tXUVVfc3kpZMUrH4mIVvG4y7HlKRc85U3CQoe7PJAxNqbsNfZuWVLzPO6CEYjdUQuf7SQk3XlSTcKRBZ5f2QgXFNFyzc29h1Ld6WDwwFcMsaiJhr9bYdIMSeuJFRkq//W3s++S0nx5D9vEqp11+4QZVBnk9qBOUxVMKBjEXz6J54v3gMLfUu0hoY/eu66Y1PIkp+g5Lfb9KLpcSS6d7vLNgkhtqcuXZtZ02sGvSPIbowN/aoi8SqKqcNbNkE00YkkvyFdKoWi05C6uUsQqnbMrWYv0sGdjKIuuPf/aQitepH3UX5dxFuJA7MJ/sz6g=
   file:
     - README.md
@@ -20,7 +20,6 @@ deploy:
   tag_name: 0.0.1
   on:
     repo: deep-compute/kwikapi
-  # pypitest
 - provider: pypi
   distributions: "sdist bdist_wheel"
   server: https://testpypi.python.org/pypi
@@ -30,7 +29,6 @@ deploy:
   on:
     tags: false
     branch: master
-  # pypi
 - provider: pypi
   distributions: "sdist bdist_wheel"
   server: https://upload.pypi.org/legacy/
