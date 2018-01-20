@@ -6,21 +6,17 @@ install:
 script:
 - python -m doctest -v README.md
 deploy:
-- provider: pypi
-  distributions: "sdist bdist_wheel"
-  server: https://testpypi.python.org/pypi
-  user: deepcompute
-  password:
-    secure: vZ1JZchFnvnvgbqGJ4YQto32DjV2z32MlkVnFlGaXMC6bwfnpVw8F17PG0WVjd2vP0Rt5yIEpyu6CwE5NnhsPOZN00lQVHf0xAZboqAodYgnaStqYlr+Y0mtvg+v/i9+1QgnXdB4sJoZP92BAULCDlC0CHmzn1yCrVh4pan5nXheWTBVWv2RN4QllQm5Ksvf2bWj6aW6xpmWHmtyK3T1J8DxjXKRCL8YWfkrYsganfDtf2Y1lAVSZjMMSN4MDC7o56jf6unEABfjmRNvqdGUeY+kPaKCItONRf67INaYE2YI13W9kD+8nVAbhhRQoZyZTjQenwXqnENUIaNz1ED3idHVDLCOfPCGd98B2TrAmi/lbqB65uqxna1zmtiF4GJmuzEndW0jzKtHovMnoqcql9e8oUNvGegxpjocvxzBl8ty6sHblULmpw/TRzlqnVplJrul6BhKK2P+OLCGTvSWAR+uZlNaYV9HshIEZfTjDdLn1PcECVrmJAyhx0iPF09U662QsYE+eWPXkwMeehQp5CZE9gJgCanCrFVhX09rBj2o3YhxV7xJJchwIT4H/1KGOTu7IWd2GcJzHIsD4woSjaTQvdUPKzRPBUxglWE7sMXq/KLrWoDoUM1Fys7ltu+0Sp0QXMELOolN+eVinnNuknKAQY50TRpBAnmlbAUu8YA=
+- provider: releases
+  skip_cleanup: true
+  api_key:
+    secure: QcZBC5FRMFhS+DyOR5IzKaOrT9P6fMXkEKtKIDdl/qG/qTKj8fmAGrO4cdQRjysEElLaOtO04xjyNBs5Z+uHLGuZv+w6/D31AnOdDrIuv+96dWRAjqhUubU2yQYBV8eYo22QILXarImBqmjHSv2LKPDapZqutariELpuagE7uMfgftbA1hASSReY9CdXnPvbt3tM2gvvtCFCy1w+AZtEt6uUJcymk8meU4PkL3fyCYXczdx/KTqWQGSOIm6zdEyjgxyaD7qzjqFBHBp6NCXedL0AgDcJ5JcH7nlOJ9LhAu03J8nENvfHwFhxi+GBolB6OQChxapdZhkfCtKHHwWCM7j3Z9LTeZdVHlwU63T49QZJRd8+fHaLKzrE+y746Qg25QqUjw3mwhuxBzdPA+mF0FCsBtQTluhdvzesvaUEfns//m47VRak5yDmY3QIKjECYT4ZkVOVY2PFlNwYX7zFK+O9+RGuZCA8vlG0r7yqQzE70IPVHpAPXQS9leTLMlST+BFQ52MmUkrnm3SZETGyFmw+XG8JORASnXZ+NIaBCdneyfp0W5ArZbihaLTs4PA/uuJwWxS6/JE/oGQpJ1iy6xHyMaYYtxx3hwW1CJ1Aya2taARix+IQAPdilJd0mCeS5KN9mX+a2oJKDrgA6NTt7R8Z9rYRv2s993HbHPCEf3c=
+  file:
+    - README.md
+    - setup.py
+    - LICENSE
+    - kwikapi/api.py
+    - kwikapi/__init__.py
+  name: kwikapi-0.0.2
+  tag_name: 0.0.2
   on:
-    tags: false
-    branch: master
-- provider: pypi
-  distributions: "sdist bdist_wheel"
-  server: https://upload.pypi.org/legacy/
-  user: deepcompute
-  password:
-    secure: vZ1JZchFnvnvgbqGJ4YQto32DjV2z32MlkVnFlGaXMC6bwfnpVw8F17PG0WVjd2vP0Rt5yIEpyu6CwE5NnhsPOZN00lQVHf0xAZboqAodYgnaStqYlr+Y0mtvg+v/i9+1QgnXdB4sJoZP92BAULCDlC0CHmzn1yCrVh4pan5nXheWTBVWv2RN4QllQm5Ksvf2bWj6aW6xpmWHmtyK3T1J8DxjXKRCL8YWfkrYsganfDtf2Y1lAVSZjMMSN4MDC7o56jf6unEABfjmRNvqdGUeY+kPaKCItONRf67INaYE2YI13W9kD+8nVAbhhRQoZyZTjQenwXqnENUIaNz1ED3idHVDLCOfPCGd98B2TrAmi/lbqB65uqxna1zmtiF4GJmuzEndW0jzKtHovMnoqcql9e8oUNvGegxpjocvxzBl8ty6sHblULmpw/TRzlqnVplJrul6BhKK2P+OLCGTvSWAR+uZlNaYV9HshIEZfTjDdLn1PcECVrmJAyhx0iPF09U662QsYE+eWPXkwMeehQp5CZE9gJgCanCrFVhX09rBj2o3YhxV7xJJchwIT4H/1KGOTu7IWd2GcJzHIsD4woSjaTQvdUPKzRPBUxglWE7sMXq/KLrWoDoUM1Fys7ltu+0Sp0QXMELOolN+eVinnNuknKAQY50TRpBAnmlbAUu8YA=
-  on:
-    tags: true
-    branch: master
+    repo: deep-compute/kwikapi
