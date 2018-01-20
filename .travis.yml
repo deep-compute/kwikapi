@@ -20,3 +20,21 @@ deploy:
   tag_name: 0.0.2
   on:
     repo: deep-compute/kwikapi
+- provider: pypi
+  distributions: "sdist bdist_wheel"
+  server: https://testpypi.python.org/pypi
+  user: deepcompute
+  password:
+    secure: "q9xULYtuoWeZutAAdwFbHP3TMdSnt14u8nkONXZW4sUgBjqql6LUcylpf3shTNIbdzcNQ74EZoF6czpbgDN5B1+7GZQLE2JdG+Ze5nPZ1c/jStuM+OyPzQigxlbhxxxpcq9rFCwjfhR7UPCfW/A5skhlmcdzNDXVxgrhQdMcggCmFjD4Ba3cGVz9OD7/S8nAozRY4O4zbj7qF7dTRb+/vLxrdaFD2b9DQKdJnOwg3y83zGZSZCwuTs+7MoJxnHARlewXsvlR3VaLoEZmtzBUFq1iN0BCazokbHoIaepalCK+meFyBoXG4s4kg1FPJkssDlFcWoR0pSc3uxlUvPCXwFymFyCzbWHVuXEU8vT3KgkVHwf5sHB15Mk6/xbcV6f7ibCP5nI8/oV3nFKHj2LfopTpAwRTJYLZPIVTCH14ZPlrThRCMvM9LnIZuJ6+C54K1qQL8Zem4daF0xj4MciB66Qql10atDfJACLxQFeSEgIMskwBEaG7uC3H/34XHsz6Q6GzYMidt6KCXrdeTLKNrLwdjNe+QK50uynEhSdGhrzYTkLX47Ty1IcIz6pUsrpSf7Kq1zFBEFvATtQkebYK7N3ppVBLYUjnKQpQ8HAlc73ZiLrxaX+UjfKrx/Z/oDTFCX4J4DU9x2axkzmivRENAhZutWuBgsQXCPmp+jLfxSg="
+  on:
+    tags: false
+    branch: master
+- provider: pypi
+  distributions: "sdist bdist_wheel"
+  server: https://upload.pypi.org/legacy/
+  user: deepcompute
+  password:
+    secure: "q9xULYtuoWeZutAAdwFbHP3TMdSnt14u8nkONXZW4sUgBjqql6LUcylpf3shTNIbdzcNQ74EZoF6czpbgDN5B1+7GZQLE2JdG+Ze5nPZ1c/jStuM+OyPzQigxlbhxxxpcq9rFCwjfhR7UPCfW/A5skhlmcdzNDXVxgrhQdMcggCmFjD4Ba3cGVz9OD7/S8nAozRY4O4zbj7qF7dTRb+/vLxrdaFD2b9DQKdJnOwg3y83zGZSZCwuTs+7MoJxnHARlewXsvlR3VaLoEZmtzBUFq1iN0BCazokbHoIaepalCK+meFyBoXG4s4kg1FPJkssDlFcWoR0pSc3uxlUvPCXwFymFyCzbWHVuXEU8vT3KgkVHwf5sHB15Mk6/xbcV6f7ibCP5nI8/oV3nFKHj2LfopTpAwRTJYLZPIVTCH14ZPlrThRCMvM9LnIZuJ6+C54K1qQL8Zem4daF0xj4MciB66Qql10atDfJACLxQFeSEgIMskwBEaG7uC3H/34XHsz6Q6GzYMidt6KCXrdeTLKNrLwdjNe+QK50uynEhSdGhrzYTkLX47Ty1IcIz6pUsrpSf7Kq1zFBEFvATtQkebYK7N3ppVBLYUjnKQpQ8HAlc73ZiLrxaX+UjfKrx/Z/oDTFCX4J4DU9x2axkzmivRENAhZutWuBgsQXCPmp+jLfxSg="
+  on:
+    tags: true
+    branch: master
