@@ -366,12 +366,19 @@ class BaseRequestHandler(object):
         self._protocols[name] = proto
 
     def _convert_type(self, value, type_):
+        if type_ == 'ndarray':
+            return value
         try:
             if type_.__name__ == 'Union':
-                if type(value) in type_.__union_params__:
-                    return value
-                else:
-                    raise NotExpectedType(type(value))
+                try:
+                    value = type_.__union_params__[1](value)
+                except ValueError:
+                    try:
+                        value = type_.__union_params__[0](value)
+                    except ValueError:
+                        raise NotExpectedType(type(value))
+                return value
+
         except AttributeError:
             try:
                 # Check if it's a builtin type
