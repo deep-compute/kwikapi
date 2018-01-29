@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*
-
+import ast
 import re
 import abc
 import inspect
@@ -211,6 +211,22 @@ class UnknownAPIFunction(BaseException):
     def message(self):
         return 'Unknown API Function: "%s"' % self.fn_name
 
+class NotExpectedType(BaseException):
+    def __init__(self, _type):
+        self._type = _type
+
+    @property
+    def message(self):
+        return '"%s" is not expected type' % self._type
+
+class ProtocolAlreadyExists(BaseException):
+    def __init__(self, proto):
+        self.proto = proto
+
+    @property
+    def message(self):
+        return '"%s" is already exists' % self.proto
+
 class API(object):
     """
     A collection of APIFragments
@@ -234,6 +250,7 @@ class API(object):
 
         if 'req' in args:
             N_PREFIX_ARGS = 2
+            _req = args[1]
         else:
             N_PREFIX_ARGS = 1
 
@@ -247,7 +264,8 @@ class API(object):
         for arg in args:
             _type = annotations.get(arg, None)
             if _type:
-                _type = _type.__name__
+                if not _type.__name__ == 'Union':
+                    _type = _type.__name__
             else:
                 raise TypeNotSpecified(arg)
 
@@ -255,12 +273,12 @@ class API(object):
 
         _return_type = annotations.get('return', None)
 
-        return_type = []
         if isinstance(_return_type, list):
-            for _type in _return_type:
-                return_type.append(_type.__name__)
-        else:
-            return_type = _return_type.__name__
+            for index, _type in enumerate(_return_type):
+                _return_type[index] = _type.__name__
+        elif _return_type:
+            if not (_return_type.__name__ == 'Union'):
+                _return_type = _return_type.__name__
 
         for arg, val in defaults.items():
             params[arg] = dict(required=False, default=val, type=_type)
@@ -268,12 +286,12 @@ class API(object):
         info = dict(
             doc=fn.__doc__,
             params=params,
-            return_type=return_type,
+            return_type=_return_type,
             gives_stream=inspect.isgeneratorfunction(fn)
         )
 
         if N_PREFIX_ARGS == 2:
-            info['isrequest'] = True
+            info['req'] = _req
 
         fn.__func__.func_info = info
         return info
@@ -339,18 +357,36 @@ class BaseRequestHandler(object):
     def __init__(self, api, default_version=None):
         self.api = api
         self.default_version = default_version
+        self._protocols = dict(self.PROTOCOLS)
+
+    def register_protocol(self, proto, update=True):
+        name = proto.get_name()
+        if not update and name in self._protocols:
+            raise ProtocolAlreadyExists(proto)
+        self._protocols[name] = proto
 
     def _convert_type(self, value, type_):
         try:
-            # Check if it's a builtin type
+            if type_.__name__ == 'Union':
+                try:
+                    for _type in type_.__union_params__:
+                        if _type == str:
+                            continue
+                        value = _type(value)
+
+                except (ValueError, TypeError) as e:
+                    pass
+
+                if type(value) in type_.__union_params__:
+                    return value
+                else:
+                    raise NotExpectedType(type(value))
+
+        except AttributeError:
             module = importlib.import_module('builtins')
             cls = getattr(module, type_)
-        except AttributeError:
-            # if not, separate module and class
-            module, type_ = type_.rsplit(".", 1)
-            module = importlib.import_module(module)
-            cls = getattr(module, type_)
-        return cls(value)
+
+            return cls(value)
 
     STREAMPARAM_HEADER = 'HTTP_X_KWIKAPI_STREAMPARAM'
     def _resolve_call_info(self, request):
@@ -400,6 +436,10 @@ class BaseRequestHandler(object):
         param_vals = dict((k, v[0]) \
             for k, v in parse_qs(query_string).items())
 
+        for key, val in param_vals.items():
+            if ('[' in val and ']' in val) or ('{' in val and '}' in val) or ('(' in val and ')' in val):
+                param_vals[key] = ast.literal_eval(val)
+
         for key, val in params.items():
             if key not in param_vals:
                 continue
@@ -415,8 +455,8 @@ class BaseRequestHandler(object):
             else:
                 param_vals[stream_param] = proto.deserialize_stream(request.body)
 
-        if info.get('isrequest'):
-            param_vals['req'] = request
+        if info.get('req', None):
+            param_vals['req'] = info.get('req')
 
         request.fn_params = param_vals
 
@@ -444,7 +484,7 @@ class BaseRequestHandler(object):
             # invoke the API function
             result = request.fn(**request.fn_params)
 
-            if isinstance(result, list):
+            if isinstance(result, list) and isinstance(self.return_type, list):
                 for index, (_value, _type) in enumerate(zip(result, self.return_type)):
                     result[index] = self._convert_type(_value, _type)
             else:
@@ -477,6 +517,7 @@ class BaseRequestHandler(object):
 
         return response.raw_response
 
+    # FIXME: Why these methods
     def _get_tmp_version_holder(self, version):
         return TempVersionHolder(version, self.api)
 
