@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*
-
+import ast
 import re
 import abc
 import inspect
@@ -366,29 +366,26 @@ class BaseRequestHandler(object):
         self._protocols[name] = proto
 
     def _convert_type(self, value, type_):
-        if type_ == 'ndarray':
-            return value
         try:
             if type_.__name__ == 'Union':
                 try:
-                    value = type_.__union_params__[1](value)
-                except ValueError:
-                    try:
-                        value = type_.__union_params__[0](value)
-                    except ValueError:
-                        raise NotExpectedType(type(value))
-                return value
+                    for _type in type_.__union_params__:
+                        if _type == str:
+                            continue
+                        value = _type(value)
+
+                except (ValueError, TypeError) as e:
+                    pass
+
+                if type(value) in type_.__union_params__:
+                    return value
+                else:
+                    raise NotExpectedType(type(value))
 
         except AttributeError:
-            try:
-                # Check if it's a builtin type
-                module = importlib.import_module('builtins')
-                cls = getattr(module, type_)
-            except AttributeError:
-                # if not, separate module and class
-                module, type_ = type_.rsplit(".", 1)
-                module = importlib.import_module(module)
-                cls = getattr(module, type_)
+            module = importlib.import_module('builtins')
+            cls = getattr(module, type_)
+
             return cls(value)
 
     STREAMPARAM_HEADER = 'HTTP_X_KWIKAPI_STREAMPARAM'
@@ -439,6 +436,10 @@ class BaseRequestHandler(object):
         param_vals = dict((k, v[0]) \
             for k, v in parse_qs(query_string).items())
 
+        for key, val in param_vals.items():
+            if ('[' in val and ']' in val) or ('{' in val and '}' in val) or ('(' in val and ')' in val):
+                param_vals[key] = ast.literal_eval(val)
+
         for key, val in params.items():
             if key not in param_vals:
                 continue
@@ -483,7 +484,7 @@ class BaseRequestHandler(object):
             # invoke the API function
             result = request.fn(**request.fn_params)
 
-            if isinstance(result, list):
+            if isinstance(result, list) and isinstance(self.return_type, list):
                 for index, (_value, _type) in enumerate(zip(result, self.return_type)):
                     result[index] = self._convert_type(_value, _type)
             else:
@@ -516,6 +517,7 @@ class BaseRequestHandler(object):
 
         return response.raw_response
 
+    # FIXME: Why these methods
     def _get_tmp_version_holder(self, version):
         return TempVersionHolder(version, self.api)
 
