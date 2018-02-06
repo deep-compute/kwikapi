@@ -15,6 +15,7 @@ setup(
     author_email='contact@deepcompute.com',
     install_requires=[
     'msgpack-python',
+    'deeputil'
     ],
     extras_require={
         'django': ['kwikapi_django'],
