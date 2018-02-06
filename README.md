@@ -1,4 +1,4 @@
-# KwikAPI1
+# KwikAPI
 
 Quickly build API services to expose functionality in Python.
 
