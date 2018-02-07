@@ -57,7 +57,7 @@ $ wget http://localhost:8888/api/v1/subtract?a=10&b=20
 For more examples of KwikAPI with Tornado go through this [link](https://github.com/deep-compute/kwikapi.tornado/blob/master/README.md) and with Django go through this [link](https://github.com/deep-compute/kwikapi.django/blob/master/README.md)
 
 ## Mock request
-Mock request is for quickly testing `kwikapi`
+Mock request is for quickly testing `KwikAPI`
 ```python
 >>> import json
 
@@ -201,7 +201,7 @@ True
 ...        c = a - b
 
 ```
-KwikAPI supports builtin types and few types from typing such as Union, List, Tuple, Dict and Any
+KwikAPI supports builtin types and few types from typing such as Union, List, Tuple, Dict, Generator and Any
 
 - If a single argument expects two or more types then Union can be used
 ```python
@@ -394,7 +394,7 @@ $ wget "http://localhost:8888/api/v1/streaming_request_test" --post-file /tmp/nu
 
 ### Protocol handling
 KwikAPI supports JSON protocol and Messagepack protocol
-#### KwikAPI supports custom protocols instead of using existing protocols
+#### KwikAPI also supports custom protocols instead of using existing protocols
 ```python 
 # Users can define their own protocols and can register with KwikAPI
 
@@ -485,10 +485,10 @@ Using API Doc we can look at what are the all API methods available
 
 To see all available API methods the URL should be http://localhost:8888/api/apidoc
 
-To check API methods under specific version we can provide url as http://localhost:8888/api/apidoc/<version name>
+To check API methods under specific version we can provide url as http://localhost:8888/api/apidoc/version
 
 ### Bulk request handling
-It will be very convienient if user the has facility to make bulk requests.
+It will be very convienient if the user has facility to make bulk requests.
 
 We are going to support bulk requests in KwikAPI in future
 ## Run test cases
