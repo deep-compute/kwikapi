@@ -1,6 +1,6 @@
 from setuptools import setup, find_packages
 
-version = '0.1'
+version = '0.1.1'
 setup(
     name="kwikapi",
     version=version,
@@ -18,9 +18,9 @@ setup(
     'deeputil==0.2'
     ],
     extras_require={
-        'django': ['kwikapi.django'],
-        'tornado': ['kwikapi.tornado'],
-        'all': ['kwikapi.django', 'kwikapi.tornado']
+        'django': ['kwikapi-django'],
+        'tornado': ['kwikapi-tornado'],
+        'all': ['kwikapi-django', 'kwikapi-tornado']
     },
     classifiers=[
         'Environment :: Web Environment',
