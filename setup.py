@@ -14,13 +14,13 @@ setup(
     author='Deep Compute, LLC',
     author_email='contact@deepcompute.com',
     install_requires=[
-    'msgpack-python',
-    'deeputil'
+    'msgpack-python==0.5.1',
+    'deeputil==0.2'
     ],
     extras_require={
-        'django': ['kwikapi_django'],
-        'tornado': ['kwikapi_tornado'],
-        'all': ['kwikapi_django', 'kwikapi_tornado']
+        'django': ['kwikapi.django'],
+        'tornado': ['kwikapi.tornado'],
+        'all': ['kwikapi.django', 'kwikapi.tornado']
     },
     classifiers=[
         'Environment :: Web Environment',

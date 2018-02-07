@@ -241,15 +241,15 @@ class ProtocolAlreadyExists(BaseException):
     def message(self):
         return '"%s" is already exists' % self.proto
 
-class NotAllowedAnnotation(BaseException):
+class UnsupportedType(BaseException):
     def __init__(self, value):
         self.value = value
 
     @property
     def message(self):
-        return '"%s" is not allowed annotation' % self.value
+        return '"%s" type is not supported' % self.value
 
-class SettedDefaultProtocolNotExist(BaseException):
+class UnknownProtocol(BaseException):
     def __init__(self, proto):
         self.proto = proto
 
@@ -261,10 +261,10 @@ class API(object):
     """
     A collection of APIFragments
     """
-    # TODO: Able to support for all types of typing
+    # TODO: support for all types of typing
     TYPING_ANNOTATIONS = ['Union', 'List', 'Dict', 'Any', 'Tuple', 'Generator']
-
     ALLOWED_ANNOTATIONS = [int, float, str, list, tuple, dict, Request] + TYPING_ANNOTATIONS
+
     def __init__(self, log=DUMMY_LOG, default_version=None):
         self._api_funcs = {}
         self.log = log
@@ -277,7 +277,7 @@ class API(object):
 
         for value in annotations.values():
             if value not in self.ALLOWED_ANNOTATIONS and value.__name__ not in self.ALLOWED_ANNOTATIONS:
-                raise NotAllowedAnnotation(value)
+                raise UnsupportedType(value)
 
         for value in annotations.values():
             if value == Request:
@@ -399,7 +399,7 @@ class BaseRequestHandler(object):
         self.DEFAULT_PROTOCOL = default_proto
 
         if self.DEFAULT_PROTOCOL not in self.PROTOCOLS:
-            raise SettedDefaultProtocolNotExist(self.DEFAULT_PROTOCOL)
+            raise UnknownProtocol(self.DEFAULT_PROTOCOL)
 
     def register_protocol(self, proto, update=True):
         name = proto.get_name()
@@ -449,7 +449,6 @@ class BaseRequestHandler(object):
 
             return cls(value)
 
-    STREAMPARAM_HEADER = 'HTTP_X_KWIKAPI_STREAMPARAM'
     def _resolve_call_info(self, request):
 
         url_components = request.url.split('/')

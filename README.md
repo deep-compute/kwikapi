@@ -14,6 +14,7 @@ $ sudo pip3 install kwikapi
 ### Quick example
 Here is an example of how to use `KwikAPI` to expose `Calc` as a service. We will use `KwikAPI` with the `tornado` webserver in this example.
 > To use KwikAPI with tornado install `sudo pip3 install kwikapi[tornado]`
+
 ```python
 import tornado.ioloop
 import tornado.web
@@ -49,15 +50,20 @@ if __name__ == "__main__":
     app.listen(8888)
     tornado.ioloop.IOLoop.current().start()
 ```
-Making API request
+
+Making an API request
 ```bash
 $ wget http://localhost:8888/api/v1/add?a=10&b=20
 $ wget http://localhost:8888/api/v1/subtract?a=10&b=20
 ```
+
 For more examples of KwikAPI with Tornado go through this [link](https://github.com/deep-compute/kwikapi.tornado/blob/master/README.md) and with Django go through this [link](https://github.com/deep-compute/kwikapi.django/blob/master/README.md)
 
 ## Mock request
-Mock request is for quickly testing `KwikAPI`
+To demonstrate the various features of `KwikAPI` and also to use the same examples
+as living documentation and test cases, we use `MockRequest` so we don't need
+`tornado` or `django`
+
 ```python
 >>> import json
 
@@ -84,27 +90,21 @@ True
 ## Features
 
 - Versioning support
-
 - Type checking
-
 - Namespace
-
 - Customizing request and response
-
 - Streaming
-
 - Protocol handling
-
 - API Doc
-
 - Bulk request handling
 
 ### Versioning support
- Versioning support will be used if user wants different versions of functionality with slightly changed behaviour
+Versioning support will be used if user wants different versions of functionality with slightly changed behaviour.
  
- Specifying version is mandatory for every class.
+Specifying the version is mandatory for every class.
  
- We can register the same class with different versions
+We can register the same class with different versions (for testing here)
+
  ```python
 >>> import json
 
@@ -131,10 +131,12 @@ True
 30
 >>> res['success']
 True
- 
- ```
- We can register different classes with different versions
- ```python
+
+```
+
+We can register different classes with different versions
+
+```python
 >>> import json
 
 >>> from kwikapi import API, MockRequest, BaseRequestHandler
@@ -166,8 +168,10 @@ True
 True
  
  ```
- We can specify default version so that when you don't mention version in the request URL then default version will be used.
- ```python
+
+We can specify the default version so that when you don't mention version in the request URL then default version will be used.
+
+```python
 >>> import json
 
 >>> from kwikapi import API, MockRequest, BaseRequestHandler
@@ -188,11 +192,12 @@ True
 >>> res['success']
 True
  
- ```
+```
  
 ### Type checking
- Specifying type for parameters and for return value will exactly meet the functionality. This is mandatory in KwikAPI (return type can be None)
- ```python
+Specifying type for parameters and for return value will exactly meet the functionality. This is mandatory in KwikAPI (return type can be None)
+
+```python
 >>> class Calc(object):
 ...    # Type information must be specified
 ...    def add(self, a: int, b: int) -> int:
@@ -201,6 +206,7 @@ True
 ...        c = a - b
 
 ```
+
 KwikAPI supports builtin types and few types from typing such as Union, List, Tuple, Dict, Generator and Any
 
 - If a single argument expects two or more types then Union can be used
@@ -211,6 +217,7 @@ KwikAPI supports builtin types and few types from typing such as Union, List, Tu
 ...        return a + b
 
 ```
+
 - If we want to pass same type of values in list then List type can be used. If the list values are different types then builtin list can be used as type annotation
 ```python
 >>> from typing import List
@@ -219,6 +226,7 @@ KwikAPI supports builtin types and few types from typing such as Union, List, Tu
 ...        return a + b
 
 ```
+
 - If we want to pass same type of keys and same type of values in dictionary then Dict type can be used. If the dictionary keys and values are different types then builtin dict can be used as type annotation
 ```python
 >>> from typing import Dict
@@ -227,6 +235,7 @@ KwikAPI supports builtin types and few types from typing such as Union, List, Tu
 ...        return a.update(b)
 
 ```
+
 - For cheking values inside tuple then we can use Tuple from typing other wise we can use builtin tuple
 ```python
 >>> from typing import Tuple
@@ -235,6 +244,7 @@ KwikAPI supports builtin types and few types from typing such as Union, List, Tu
 ...        return a + b
 
 ```
+
 - If the method contains more than one return value then we can mention types in square brackets
 ```python
 >>> from typing import List
@@ -243,6 +253,7 @@ KwikAPI supports builtin types and few types from typing such as Union, List, Tu
 ...        return a, b
 
 ```
+
 - If request or response contains stream data then we can use Generator
 ```python
 >>> from typing import Generator
@@ -255,6 +266,7 @@ KwikAPI supports builtin types and few types from typing such as Union, List, Tu
 ...        return _sum
 
 ```
+
 - If we don't need to bother about type checking then we can simply use Any from typing
 ```python
 >>> from typing import Any
@@ -263,9 +275,11 @@ KwikAPI supports builtin types and few types from typing such as Union, List, Tu
 ...        return a, b
 
 ```
+
 ### Namespace
- Register methods with different namespaces
- ```python
+Register methods with different namespaces
+
+```python
 >>> import json
 
 >>> from kwikapi import API, MockRequest, BaseRequestHandler
@@ -296,9 +310,10 @@ True
 >>> res['success']
 True
  
- ```
+```
 Register same methods with same version with different namespaces
- ```python
+
+```python
 >>> import json
  
 >>> from kwikapi import API, MockRequest, BaseRequestHandler, Request
@@ -332,10 +347,12 @@ True
 True
 
 ```
+
 > We can also register same methods with same namespace with different versions
 
 ### Customizing request and response
 User can change the response if he wants it
+
 ```python
 >>> import json
 
@@ -358,9 +375,11 @@ User can change the response if he wants it
 >>> res['success']
 True
  
- ```
+```
+
 ### Streaming
 KwikAPI supports request and response Streaming
+
 ```python
 class MyAPI(object):
     # Streaming response
@@ -394,6 +413,7 @@ $ wget "http://localhost:8888/api/v1/streaming_request_test" --post-file /tmp/nu
 
 ### Protocol handling
 KwikAPI supports JSON protocol and Messagepack protocol
+
 #### KwikAPI also supports custom protocols instead of using existing protocols
 ```python 
 # Users can define their own protocols and can register with KwikAPI
@@ -448,6 +468,7 @@ KwikAPI supports JSON protocol and Messagepack protocol
 True
 
 ```
+
 #### By default KwikAPI uses JSON protocol. User can  change the default protocol.
 ```python
 >>> import msgpack
@@ -476,10 +497,12 @@ True
 #### KwikAPI also supports defining specific protocol for specific request
 If user wants to use specific protocol with specific request then he should specify the protocol in headers
 ex:
+
 ```bash
 $ wget "http://localhost:8888/api/v1/add" --header="X-KwikAPI-Protocol: messagepack" --post-file /tmp/data.msgpack
 $ wget "http://localhost:8888/api/v1/subtract" --header="X-KwikAPI-Protocol: json" --post-data '{"a": 10, "b": 20}'
 ```
+
 ### API Doc
 Using API Doc we can look at what are the all API methods available
 
@@ -488,9 +511,13 @@ To see all available API methods the URL should be http://localhost:8888/api/api
 To check API methods under specific version we can provide url as http://localhost:8888/api/apidoc/version
 
 ### Bulk request handling
-It will be very convienient if the user has facility to make bulk requests.
+It will be very convenient if the user has facility to make bulk requests.
+When making a large number of requests, the overhead of network latency and HTTP request/response processing
+can slow down the operation. It is convenient and necessary to have a mechanism to sent a set of requests in
+bulk.
 
-We are going to support bulk requests in KwikAPI in future
+We are going to support bulk requests in `KwikAPI` in future.
+
 ## Run test cases
 ```bash
 $ python3 -m doctest -v README.md
