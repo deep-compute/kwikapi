@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*
+import sys
 import ast
-import re
 import abc
 import inspect
 import json
@@ -10,9 +10,9 @@ import importlib
 from itertools import chain
 from urllib.parse import parse_qs
 
-#from deeputil import Dummy
+from deeputil import Dummy
 
-#DUMMY_LOG = Dummy()
+DUMMY_LOG = Dummy()
 
 class BaseProtocol(object):
     __metaclass__ = abc.ABCMeta
@@ -53,12 +53,12 @@ class JsonProtocol(BaseProtocol):
 
     @staticmethod
     def deserialize(data):
-        return json.loads(data)
+        return json.loads(data.decode('utf-8'))
 
     @classmethod
     def deserialize_stream(cls, data):
         for line in data:
-            yield cls.deserialize(line.decode('utf8'))
+            yield cls.deserialize(line)
 
     @staticmethod
     def get_record_separator():
@@ -80,7 +80,7 @@ class MessagePackProtocol(BaseProtocol):
 
     @staticmethod
     def deserialize(data):
-        return msgpack.unpackb(data)
+        return {k.decode('utf8'): v for k, v in msgpack.unpackb(data).items()}
 
     @classmethod
     def deserialize_stream(cls, data):
@@ -152,15 +152,29 @@ class BaseResponse(object):
     def close(self):
         pass
 
-class MockRequest(object):
+class MockRequest(BaseRequest):
+
     def __init__(self, **kwargs):
-        defaults = dict(method='GET', body='', headers={})
-        defaults.update(kwargs)
-        self._data = defaults
+        super().__init__()
+        self._request = dict(method='GET', body='', headers={})
+        self._request.update(kwargs)
         self.response = MockResponse()
 
-    def __getattr__(self, attr):
-        return self._data[attr]
+    @property
+    def url(self):
+        return self._request['url']
+
+    @property
+    def method(self):
+        return self._request['method']
+
+    @property
+    def body(self):
+        return self._request['body']
+
+    @property
+    def headers(self):
+        return self._request['headers']
 
 class MockResponse(BaseResponse):
     def __init__(self):
@@ -227,30 +241,49 @@ class ProtocolAlreadyExists(BaseException):
     def message(self):
         return '"%s" is already exists' % self.proto
 
+class UnsupportedType(BaseException):
+    def __init__(self, value):
+        self.value = value
+
+    @property
+    def message(self):
+        return '"%s" type is not supported' % self.value
+
+class UnknownProtocol(BaseException):
+    def __init__(self, proto):
+        self.proto = proto
+
+    @property
+    def message(self):
+        return '"%s" protocol is not exist to make it default' % self.proto
+
 class API(object):
     """
     A collection of APIFragments
     """
+    # TODO: support for all types of typing
+    TYPING_ANNOTATIONS = ['Union', 'List', 'Dict', 'Any', 'Tuple', 'Generator']
+    ALLOWED_ANNOTATIONS = [int, float, str, list, tuple, dict, Request] + TYPING_ANNOTATIONS
 
-    # FIXME: log should not be compulsory. Please use deeputil.Dummy as default value for log
-    def __init__(self, log, default_version=None):
+    def __init__(self, log=DUMMY_LOG, default_version=None):
         self._api_funcs = {}
         self.log = log
         self.default_version = default_version
-
-    # Number of positional arguments in an API function
-    # that need to be ignored when building the API func doc
-    # i.e. For "self" and "request" (that are present in every
-    # API function signature.
 
     def _get_fn_info(self, fn):
         argspec = inspect.getfullargspec(fn)
         args, defaults, annotations = argspec.args, argspec.defaults, \
                 argspec.annotations
 
-        if 'req' in args:
-            N_PREFIX_ARGS = 2
-            _req = args[1]
+        for value in annotations.values():
+            if value not in self.ALLOWED_ANNOTATIONS and value.__name__ not in self.ALLOWED_ANNOTATIONS:
+                raise UnsupportedType(value)
+
+        for value in annotations.values():
+            if value == Request:
+                N_PREFIX_ARGS = 2
+                _req = value
+                break
         else:
             N_PREFIX_ARGS = 1
 
@@ -264,7 +297,7 @@ class API(object):
         for arg in args:
             _type = annotations.get(arg, None)
             if _type:
-                if not _type.__name__ == 'Union':
+                if not _type.__name__ in self.TYPING_ANNOTATIONS:
                     _type = _type.__name__
             else:
                 raise TypeNotSpecified(arg)
@@ -277,7 +310,7 @@ class API(object):
             for index, _type in enumerate(_return_type):
                 _return_type[index] = _type.__name__
         elif _return_type:
-            if not (_return_type.__name__ == 'Union'):
+            if not _return_type.__name__ in self.TYPING_ANNOTATIONS:
                 _return_type = _return_type.__name__
 
         for arg, val in defaults.items():
@@ -327,6 +360,18 @@ class API(object):
             if version in key:
                 return True
 
+    def doc(self, version=None, namespace=None):
+        versions = {}
+        for (ver, fn_name, namespace), fninfo in self._api_funcs.items():
+            vfns = versions.get(ver, {})
+            vfns[fn_name] = fninfo['info']
+            versions[ver] = vfns
+
+        if version:
+            return versions[version]
+
+        return versions
+
     def has_api_fn(self, fn_name, version, namespace):
         return (version, fn_name, namespace) in self._api_funcs
 
@@ -335,15 +380,6 @@ class API(object):
 
     def get_api_fn(self, fn_name, version, namespace):
         return self._api_funcs[(version, fn_name, namespace)]
-
-class TempVersionHolder(object):
-
-    def __init__(self, version, api):
-        self.version = version
-        self.api = api
-
-    def __getattr__(self, func):
-        return self.api.get_api_fn(func, self.version)['obj']
 
 class BaseRequestHandler(object):
 
@@ -359,6 +395,12 @@ class BaseRequestHandler(object):
         self.default_version = default_version
         self._protocols = dict(self.PROTOCOLS)
 
+    def set_default_protocol(self, default_proto=JsonProtocol.get_name()):
+        self.DEFAULT_PROTOCOL = default_proto
+
+        if self.DEFAULT_PROTOCOL not in self.PROTOCOLS:
+            raise UnknownProtocol(self.DEFAULT_PROTOCOL)
+
     def register_protocol(self, proto, update=True):
         name = proto.get_name()
         if not update and name in self._protocols:
@@ -368,19 +410,38 @@ class BaseRequestHandler(object):
     def _convert_type(self, value, type_):
         try:
             if type_.__name__ == 'Union':
-                try:
-                    for _type in type_.__union_params__:
-                        if _type == str:
-                            continue
-                        value = _type(value)
-
-                except (ValueError, TypeError) as e:
-                    pass
-
                 if type(value) in type_.__union_params__:
                     return value
                 else:
                     raise NotExpectedType(type(value))
+
+            elif type_.__name__ == 'List':
+                for val in value:
+                    if not type(val) in type_.__args__:
+                        raise NotExpectedType(type(val))
+                return value
+
+            elif type_.__name__ == 'Tuple':
+                for val in value:
+                    if not type(val) in type_.__tuple_params__:
+                        raise NotExpectedType(type(val))
+                return value
+
+            elif type_.__name__ == 'Dict':
+                for key, val in value.items():
+                    if not isinstance(key, type_.__args__[0]):
+                        raise NotExpectedType(type(key))
+
+                    if not isinstance(val, type_.__args__[1]):
+                        raise NotExpectedType(type(val))
+
+                return value
+
+            elif type_.__name__ == 'Generator':
+                return value
+
+            elif type_.__name__ == 'Any':
+                return value
 
         except AttributeError:
             module = importlib.import_module('builtins')
@@ -388,7 +449,6 @@ class BaseRequestHandler(object):
 
             return cls(value)
 
-    STREAMPARAM_HEADER = 'HTTP_X_KWIKAPI_STREAMPARAM'
     def _resolve_call_info(self, request):
 
         url_components = request.url.split('/')
@@ -437,8 +497,10 @@ class BaseRequestHandler(object):
             for k, v in parse_qs(query_string).items())
 
         for key, val in param_vals.items():
-            if ('[' in val and ']' in val) or ('{' in val and '}' in val) or ('(' in val and ')' in val):
+            try:
                 param_vals[key] = ast.literal_eval(val)
+            except:
+                param_vals[key] = val
 
         for key, val in params.items():
             if key not in param_vals:
@@ -448,20 +510,29 @@ class BaseRequestHandler(object):
 
         if request.method == 'POST':
             proto = self._find_request_protocol(request)
-            stream_param = request.headers.get(self.STREAMPARAM_HEADER, None)
+
+            for stream_param in params:
+                try:
+                    if params[stream_param]['type'].__name__ == 'Generator':
+                        stream_param = stream_param
+                        break
+                except AttributeError:
+                    continue
+            else:
+                stream_param = None
 
             if not stream_param:
-                param_vals.update(proto.deserialize(request.body.read()))
+                try:
+                    param_vals.update(proto.deserialize(request.body.read()))
+                except AttributeError:
+                    param_vals.update(proto.deserialize(request.body))
             else:
                 param_vals[stream_param] = proto.deserialize_stream(request.body)
 
         if info.get('req', None):
-            param_vals['req'] = info.get('req')
+            param_vals['req'] = request # param_vals['req'] = info.get('req')
 
         request.fn_params = param_vals
-
-        # check validity of params and do type conversion (TODO)
-        # 3. Perform type conversion
 
         return request
 
@@ -516,13 +587,3 @@ class BaseRequestHandler(object):
         response.close()
 
         return response.raw_response
-
-    # FIXME: Why these methods
-    def _get_tmp_version_holder(self, version):
-        return TempVersionHolder(version, self.api)
-
-    def __getitem__(self, version):
-        return self._get_tmp_version_holder(version)
-
-    def __getattr__(self, fn_name):
-        return getattr(self._get_tmp_version_holder(self.default_version), fn_name)
