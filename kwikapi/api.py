@@ -257,6 +257,14 @@ class UnknownProtocol(BaseException):
     def message(self):
         return '"%s" protocol is not exist to make it default' % self.proto
 
+class UnknownVersion(BaseException):
+    def __init__(self, version):
+        self.version = version
+
+    @property
+    def message(self):
+        return '"%s" There are no methods associated with this version' % self.version
+
 class API(object):
     """
     A collection of APIFragments
@@ -364,6 +372,11 @@ class API(object):
         versions = {}
         for (ver, fn_name, namespace), fninfo in self._api_funcs.items():
             vfns = versions.get(ver, {})
+
+            for key in fninfo['info']['params'].keys():
+                fninfo['info']['params'][key]['type'] = str(fninfo['info']['params'][key]['type'])
+            fninfo['info']['return_type'] = str(fninfo['info']['return_type'])
+
             vfns[fn_name] = fninfo['info']
             versions[ver] = vfns
 
@@ -452,10 +465,17 @@ class BaseRequestHandler(object):
     def _resolve_call_info(self, request):
 
         url_components = request.url.split('/')
-
         version = url_components[2]
-        namespace = ''
 
+        if 'apidoc' in url_components:
+            if self.api.isversion(version):
+                return self.api.doc(version)
+            elif 'apidoc' == url_components[2]:
+                return self.api.doc(self.api.get_default_version())
+            else:
+                raise UnknownVersion(version)
+
+        namespace = ''
         if self.api.isversion(version):
             for namespaceparts in url_components[3:len(url_components)-1]:
                 namespace = namespace + namespaceparts + '/'
@@ -550,20 +570,28 @@ class BaseRequestHandler(object):
         response_data = ''
 
         try:
-            self._resolve_call_info(request)
+            result = self._resolve_call_info(request)
 
-            # invoke the API function
-            result = request.fn(**request.fn_params)
+            if request.fn_params:
 
-            if isinstance(result, list) and isinstance(self.return_type, list):
-                for index, (_value, _type) in enumerate(zip(result, self.return_type)):
-                    result[index] = self._convert_type(_value, _type)
-            else:
-                result = self._convert_type(result, self.return_type)
+                # invoke the API function
+                result = request.fn(**request.fn_params)
 
-            # Serialize the response
-            if request.fn.__func__.func_info['gives_stream']:
-                response.write(result, proto, stream=True)
+                if isinstance(result, list) and isinstance(self.return_type, list):
+                    for index, (_value, _type) in enumerate(zip(result, self.return_type)):
+                        result[index] = self._convert_type(_value, _type)
+                else:
+                    result = self._convert_type(result, self.return_type)
+
+                # Serialize the response
+                if request.fn.__func__.func_info['gives_stream']:
+                    response.write(result, proto, stream=True)
+
+                else:
+                    response.write(dict(
+                        success = True,
+                        result = result,
+                    ), proto)
 
             else:
                 response.write(dict(
