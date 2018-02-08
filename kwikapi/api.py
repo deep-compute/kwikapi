@@ -271,7 +271,7 @@ class API(object):
     """
     # TODO: support for all types of typing
     TYPING_ANNOTATIONS = ['Union', 'List', 'Dict', 'Any', 'Tuple', 'Generator']
-    ALLOWED_ANNOTATIONS = [int, float, str, list, tuple, dict, Request] + TYPING_ANNOTATIONS
+    ALLOWED_ANNOTATIONS = [bool, int, float, str, list, tuple, dict, Request] + TYPING_ANNOTATIONS
 
     def __init__(self, log=DUMMY_LOG, default_version=None):
         self._api_funcs = {}
