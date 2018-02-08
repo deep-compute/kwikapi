@@ -506,9 +506,37 @@ $ wget "http://localhost:8888/api/v1/subtract" --header="X-KwikAPI-Protocol: jso
 ### API Doc
 Using API Doc we can look at what are the all API methods available
 
-To see all available API methods the URL should be http://localhost:8888/api/apidoc
+To see available API methods the URL will be http://localhost:8888/api/apidoc for default version
 
-To check API methods under specific version we can provide url as http://localhost:8888/api/apidoc/version
+To check API methods under specific version we can provide url as http://localhost:8888/api/version/apidoc
+
+```python
+>>> import json
+>>> from pprint import pprint
+
+>>> from kwikapi import API, MockRequest, BaseRequestHandler
+
+>>> class Calc(object):
+...    def add(self, a: int, b: int) -> int:
+...        return a + b
+
+>>> api = API()
+>>> api.register(Calc(), "v1")
+
+>>> req = MockRequest(url="/api/v1/apidoc")
+>>> res = json.loads(BaseRequestHandler(api).handle_request(req))
+
+>>> pprint(res['result'])
+{'add': {'doc': None,
+         'gives_stream': False,
+         'params': {'a': {'default': None, 'required': True, 'type': 'int'},
+                    'b': {'default': None, 'required': True, 'type': 'int'}},
+         'return_type': 'int'}}
+
+>>> res['success']
+True
+
+```
 
 ### Bulk request handling
 It will be very convenient if the user has facility to make bulk requests.
