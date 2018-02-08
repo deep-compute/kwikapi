@@ -24,10 +24,10 @@ from kwikapi import API
 
 # Core logic that you want to expose as a service
 class Calc(object):
-    def add(self, a: int, b: int) -> int:
+    def add(self, a, b):
         return a + b
 
-    def subtract(self, a: int, b: int) -> int:
+    def subtract(self, a, b):
         return a - b
 
 # Standard boilerplate code to define the service. This
@@ -70,8 +70,7 @@ as living documentation and test cases, we use `MockRequest` so we don't need
 >>> from kwikapi import API, MockRequest, BaseRequestHandler
 
 >>> class Calc(object):
-...    # Type information must be specified
-...    def add(self, a: int, b: int) -> int:
+...    def add(self, a, b):
 ...        return a + b
 
 >>> api = API()
@@ -90,7 +89,6 @@ True
 ## Features
 
 - Versioning support
-- Type checking
 - Namespace
 - Customizing request and response
 - Streaming
@@ -111,7 +109,7 @@ We can register the same class with different versions (for testing here)
 >>> from kwikapi import API, MockRequest, BaseRequestHandler
 
 >>> class Calc(object):
-...    def add(self, a: int, b: int) -> int:
+...    def add(self, a, b):
 ...        return a + b
 
 >>> api = API()
@@ -142,11 +140,11 @@ We can register different classes with different versions
 >>> from kwikapi import API, MockRequest, BaseRequestHandler
 
 >>> class Calc(object):
-...    def add(self, a: int, b: int) -> int:
+...    def add(self, a, b):
 ...        return a + b
 
 >>> class ConcStr(object):
-...    def add(self, a: str, b: str) -> str:
+...    def add(self, a, b):
 ...        return a+b
 
 >>> api = API()
@@ -160,10 +158,10 @@ We can register different classes with different versions
 >>> res['success']
 True
 
->>> req = MockRequest(url="/api/v2/add?a=10&b=20")
+>>> req = MockRequest(url="/api/v2/add?a=hello&b=hi")
 >>> res = json.loads(BaseRequestHandler(api).handle_request(req))
 >>> res['result']
-'1020'
+'hellohi'
 >>> res['success']
 True
  
@@ -177,8 +175,7 @@ We can specify the default version so that when you don't mention version in the
 >>> from kwikapi import API, MockRequest, BaseRequestHandler
 
 >>> class Calc(object):
-...    # Type information must be specified
-...    def add(self, a: int, b: int) -> int:
+...    def add(self, a, b):
 ...        return a + b
 
 >>> api = API(default_version='v1')
@@ -193,88 +190,6 @@ We can specify the default version so that when you don't mention version in the
 True
  
 ```
- 
-### Type checking
-Specifying type for parameters and for return value will exactly meet the functionality. This is mandatory in KwikAPI (return type can be None)
-
-```python
->>> class Calc(object):
-...    # Type information must be specified
-...    def add(self, a: int, b: int) -> int:
-...        return a + b
-...    def sub(self, a: int, b: int) -> None:
-...        c = a - b
-
-```
-
-KwikAPI supports builtin types and few types from typing such as Union, List, Tuple, Dict, Generator and Any
-
-- If a single argument expects two or more types then Union can be used
-```python
->>> from typing import Union
->>> class Calc(object):
-...    def add(self, a: Union[int, float], b: int) -> Union[int, float]:
-...        return a + b
-
-```
-
-- If we want to pass same type of values in list then List type can be used. If the list values are different types then builtin list can be used as type annotation
-```python
->>> from typing import List
->>> class Calc(object):
-...    def add(self, a: List[str], b: list) -> list:
-...        return a + b
-
-```
-
-- If we want to pass same type of keys and same type of values in dictionary then Dict type can be used. If the dictionary keys and values are different types then builtin dict can be used as type annotation
-```python
->>> from typing import Dict
->>> class Calc(object):
-...    def add(self, a: Dict[str, int], b: dict) -> dict:
-...        return a.update(b)
-
-```
-
-- For cheking values inside tuple then we can use Tuple from typing other wise we can use builtin tuple
-```python
->>> from typing import Tuple
->>> class Calc(object):
-...    def add(self, a: Tuple[str, int, float], b: tuple) -> tuple:
-...        return a + b
-
-```
-
-- If the method contains more than one return value then we can mention types in square brackets
-```python
->>> from typing import List
->>> class Calc(object):
-...    def add(self, a: int, b: int) -> [int, int]:
-...        return a, b
-
-```
-
-- If request or response contains stream data then we can use Generator
-```python
->>> from typing import Generator
->>> class Calc(object):
-...    def add(self, a: Generator[int, None, None]) -> int:
-...        _sum = 0
-...        for i in a:
-...            _sum += i
-
-...        return _sum
-
-```
-
-- If we don't need to bother about type checking then we can simply use Any from typing
-```python
->>> from typing import Any
->>> class Calc(object):
-...    def add(self, a: Any, b: Any) -> Any:
-...        return a, b
-
-```
 
 ### Namespace
 Register methods with different namespaces
@@ -285,12 +200,12 @@ Register methods with different namespaces
 >>> from kwikapi import API, MockRequest, BaseRequestHandler
 
 >>> class Calc(object):
-...    def add(self, a: int, b: int) -> int:
+...    def add(self, a, b):
 ...        return a + b
 
 >>> class ConcStr(object):
-...    def add(self, a: str, b: str) -> str:
-...        return a+b
+...    def add(self, a, b):
+...        return a + b
 
 >>> api = API(default_version="v1")
 >>> api.register(Calc(), "v1", "Calc")
@@ -319,11 +234,11 @@ Register same methods with same version with different namespaces
 >>> from kwikapi import API, MockRequest, BaseRequestHandler, Request
  
 >>> class Calc(object):
-...    def add(self, req: Request, a: int, b: int) -> int:
+...    def add(self, a, b):
 ...        return a + b
 
 >>> class CalcScintific(object):
-...    def add(self, req: Request, a: int, b: int) -> int:
+...    def add(self, a, b):
 ...        return a + b + 10
 
 >>> api = API()
@@ -359,8 +274,7 @@ User can change the response if he wants it
 >>> from kwikapi import API, MockRequest, BaseRequestHandler, Request
 
 >>> class Calc(object):
-...    # Type information must be specified
-...    def add(self, req: Request, a: int, b: int) -> int:
+...    def add(self, req: Request, a, b):
 ...        req.response.headers['something'] = 'something'
 ...        return a + b
 
@@ -383,12 +297,12 @@ KwikAPI supports request and response Streaming
 ```python
 class MyAPI(object):
     # Streaming response
-    def streaming_response_test(self, num: int) -> Generator[int, None, None]:
+    def streaming_response_test(self, num):
         for i in range(num):
             yield {i: i}
 
     # Streaming request
-    def streaming_request_test(self, numbers: Generator[int, None, None]) -> int:
+    def streaming_request_test(self, numbers):
         _sum = 0
         for i in numbers:
             _sum += i
@@ -398,7 +312,7 @@ class MyAPI(object):
 ```bash
 $ wget "http://localhost:8888/api/v1/streaming_response_test" --post-data '{"a": 10}'
 
-$ wget "http://localhost:8888/api/v1/streaming_request_test" --post-file /tmp/numbers
+$ wget "http://localhost:8888/api/v1/streaming_request_test" --header="X-KwikAPI-Streamparam: numbers" --post-file /tmp/numbers
 
 /tmp/numbers
 0
@@ -424,7 +338,7 @@ KwikAPI supports JSON protocol and Messagepack protocol
 
 >>> class Calc(object):
 ...    # Type information must be specified
-...    def add(self, req: Request, a: int, b: int) -> int:
+...    def add(self, req: Request, a, b):
 ...        return a + b
 
 >>> class CustomProtocol(BaseProtocol):
@@ -475,8 +389,7 @@ True
 >>> from kwikapi import API, MockRequest, BaseRequestHandler
 
 >>> class Calc(object):
-...    # Type information must be specified
-...    def add(self, a: int, b: int) -> int:
+...    def add(self, a, b):
 ...        return a + b
 
 >>> api = API()
@@ -517,7 +430,7 @@ To check API methods under specific version we can provide URL as http://localho
 >>> from kwikapi import API, MockRequest, BaseRequestHandler
 
 >>> class Calc(object):
-...    def add(self, a: int, b: int) -> int:
+...    def add(self, a, b):
 ...        return a + b
 
 >>> api = API()
@@ -529,9 +442,8 @@ To check API methods under specific version we can provide URL as http://localho
 >>> pprint(res['result'])
 {'add': {'doc': None,
          'gives_stream': False,
-         'params': {'a': {'default': None, 'required': True, 'type': 'int'},
-                    'b': {'default': None, 'required': True, 'type': 'int'}},
-         'return_type': 'int'}}
+         'params': {'a': {'default': None, 'required': True},
+                    'b': {'default': None, 'required': True}}}}
 
 >>> res['success']
 True
