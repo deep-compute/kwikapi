@@ -508,7 +508,7 @@ Using API Doc we can look at what are the all API methods available
 
 To see available API methods the URL will be http://localhost:8888/api/apidoc for default version
 
-To check API methods under specific version we can provide url as http://localhost:8888/api/version/apidoc
+To check API methods under specific version we can provide URL as http://localhost:8888/api/version/apidoc
 
 ```python
 >>> import json
