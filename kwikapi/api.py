@@ -1,15 +1,13 @@
 # -*- coding: utf-8 -*
-import sys
 import ast
 import abc
 import inspect
 import json
-import msgpack
 import traceback
-import importlib
-from itertools import chain
 from urllib.parse import parse_qs
+import typing
 
+import msgpack
 from deeputil import Dummy
 
 DUMMY_LOG = Dummy()
@@ -241,10 +239,33 @@ class UnknownVersion(BaseException):
     def message(self):
         return '"%s" There are no methods associated with this version' % self.version
 
+class UnsupportedType(BaseException):
+    def __init__(self, _type):
+        self._type = _type
+
+    @property
+    def message(self):
+        return '"%s" type is not supported' % self._type
+
+class TypeNotSpecified(BaseException):
+    def __init__(self, arg):
+        self.arg = arg
+
+    @property
+    def message(self):
+        return 'Please specify type for the argument "%s"' % (self.arg)
+
 class API(object):
     """
     A collection of APIFragments
     """
+    TYPING_ANNOTATIONS = [typing.List, typing.Dict, typing.Tuple, typing.Generator, typing.Union, typing.Any,
+            typing.NewType, typing.Callable, typing.Mapping, typing.Sequence, typing.TypeVar, typing.Generic,
+            typing.Sized, typing.Type, typing.Reversible, typing.SupportsInt, typing.SupportsFloat,
+            typing.SupportsComplex, typing.SupportsBytes, typing.SupportsAbs, typing.SupportsRound,
+            typing.Container, typing.Set, typing.Iterable, typing.Iterator,typing.Reversible, typing.Sequence]
+
+    ALLOWED_ANNOTATIONS = [bool, int, float, str, list, tuple, dict, Exception, Request] + TYPING_ANNOTATIONS
 
     def __init__(self, log=DUMMY_LOG, default_version=None):
         self._api_funcs = {}
@@ -271,14 +292,24 @@ class API(object):
 
         params = {}
         for arg in args:
-            params[arg] = dict(required=True, default=None)
+            _type = annotations.get(arg, None)
+
+            params[arg] = dict(required=True, default=None, type=_type)
 
         for arg, val in defaults.items():
-            params[arg] = dict(required=False, default=val)
+            _type = annotations.get(arg, None)
+
+            params[arg] = dict(required=False, default=val, type=_type)
+
+        try:
+            _return_type = annotations['return']
+        except KeyError:
+            _return_type = 'None'
 
         info = dict(
             doc=fn.__doc__,
             params=params,
+            return_type=_return_type,
             gives_stream=inspect.isgeneratorfunction(fn)
         )
 
@@ -291,8 +322,7 @@ class API(object):
     def _discover_funcs(self, api_fragment, version, namespace):
         api_funcs = {}
 
-        for fn_name, fn in inspect.getmembers(api_fragment,
-                                predicate=inspect.ismethod):
+        for fn_name, fn in inspect.getmembers(api_fragment, predicate=inspect.ismethod):
 
             # skipping non-public methods
             if fn_name.startswith('_'):
@@ -303,26 +333,77 @@ class API(object):
 
         return api_funcs
 
-    def _ensure_no_overlap(self, api_fragment_funcs):
-        for (version, fn_name, namespace), info in api_fragment_funcs.items():
+    def _check_type(self, _type):
+        for allowed_type in self.ALLOWED_ANNOTATIONS:
+            try:
+                if _type == type(None) or _type == None:
+                    break
+                if issubclass(_type, allowed_type):
+                    break
+            except TypeError:
+                try:
+                    if _type.__module__ == 'typing':
+                        break
+                    else:
+                        raise UnsupportedType(_type)
+                except AttributeError:
+                    raise UnsupportedType(_type)
+        else:
+            raise UnsupportedType(_type)
+
+    def _check_type_info(self, _type):
+        try:
+            for arg in _type.__args__:
+                self._check_type_info(arg)
+                self._check_type(arg)
+        except (AttributeError, TypeError):
+            pass
+
+    def _ensure_type_annotations(self, funcs):
+        for fn in funcs.values():
+            params = fn['info']['params']
+
+            for arg in params.keys():
+                _type = params[arg]['type']
+                if not _type:
+                    raise TypeNotSpecified(arg)
+
+                self._check_type(_type)
+                self._check_type_info(_type)
+
+            return_type = fn['info']['return_type']
+            if return_type == 'None':
+                raise TypeNotSpecified('return')
+            else:
+                self._check_type(return_type)
+                self._check_type_info(return_type)
+
+    def _ensure_no_overlap(self, funcs):
+        for (version, fn_name, namespace), _ in funcs.items():
             if (version, fn_name) in self._api_funcs:
                 raise DuplicateAPIFunction(version, fn_name)
 
     def register(self, api_fragment, version, namespace=None):
         funcs = self._discover_funcs(api_fragment, version, namespace)
+        self._ensure_type_annotations(funcs)
         self._ensure_no_overlap(funcs)
         self._api_funcs.update(funcs)
         api_fragment.log = self.log
 
     def isversion(self, version):
-        for key in self._api_funcs.keys():
+        for key in self._api_funcs:
             if version in key:
                 return True
 
-    def doc(self, version=None, namespace=None):
+    def doc(self, version=None, nsp=None):
         versions = {}
         for (ver, fn_name, namespace), fninfo in self._api_funcs.items():
             vfns = versions.get(ver, {})
+
+            for key in fninfo['info']['params'].keys():
+                fninfo['info']['params'][key]['type'] = str(fninfo['info']['params'][key]['type'])
+            fninfo['info']['return_type'] = str(fninfo['info']['return_type'])
+
             vfns[fn_name] = fninfo['info']
             versions[ver] = vfns
 
@@ -366,16 +447,14 @@ class BaseRequestHandler(object):
             raise ProtocolAlreadyExists(proto)
         self._protocols[name] = proto
 
-    STREAMPARAM_HEADER = 'X-KwikAPI-Streamparam'
     def _resolve_call_info(self, request):
-
         url_components = request.url.split('/')
         version = url_components[2]
 
         if 'apidoc' in url_components:
             if self.api.isversion(version):
                 return self.api.doc(version)
-            elif 'apidoc' == url_components[2]:
+            elif url_components[2] == 'apidoc':
                 return self.api.doc(self.api.get_default_version())
             else:
                 raise UnknownVersion(version)
@@ -428,7 +507,16 @@ class BaseRequestHandler(object):
 
         if request.method == 'POST':
             proto = self._find_request_protocol(request)
-            stream_param = request.headers.get(self.STREAMPARAM_HEADER, None)
+
+            for stream_param in params:
+                try:
+                    if issubclass(params[stream_param]['type'], typing.Generator):
+                        stream_param = stream_param
+                        break
+                except AttributeError:
+                    continue
+            else:
+                stream_param = None
 
             if not stream_param:
                 try:
@@ -456,8 +544,6 @@ class BaseRequestHandler(object):
         response = request.response
         response.headers['Content-Type'] = proto.get_mime_type()
 
-        response_data = ''
-
         try:
             result = self._resolve_call_info(request)
 
@@ -472,14 +558,14 @@ class BaseRequestHandler(object):
 
                 else:
                     response.write(dict(
-                        success = True,
-                        result = result,
+                        success=True,
+                        result=result,
                     ), proto)
 
             else:
                 response.write(dict(
-                    success = True,
-                    result = result,
+                    success=True,
+                    result=result,
                 ), proto)
 
         except Exception as e:
@@ -490,8 +576,8 @@ class BaseRequestHandler(object):
             print(traceback.print_tb(e.__traceback__))
 
             response.write(dict(
-                success = False,
-                message = message
+                success=False,
+                message=message
             ), proto)
 
         response.flush()

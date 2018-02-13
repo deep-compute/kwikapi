@@ -18,9 +18,9 @@ setup(
     'deeputil==0.2'
     ],
     extras_require={
-        'django': ['kwikapi-django'],
-        'tornado': ['kwikapi-tornado'],
-        'all': ['kwikapi-django', 'kwikapi-tornado']
+        'django': ['kwikapi-django==0.2'],
+        'tornado': ['kwikapi-tornado==0.2'],
+        'all': ['kwikapi-django==0.2', 'kwikapi-tornado==0.2']
     },
     classifiers=[
         'Environment :: Web Environment',
