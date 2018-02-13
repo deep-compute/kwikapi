@@ -160,10 +160,10 @@ We can register different classes with different versions
 >>> res['success']
 True
 
->>> req = MockRequest(url="/api/v2/add?a=10&b=20")
+>>> req = MockRequest(url="/api/v2/add?a=in&b=dia")
 >>> res = json.loads(BaseRequestHandler(api).handle_request(req))
 >>> res['result']
-'1020'
+'india'
 >>> res['success']
 True
  
@@ -195,7 +195,7 @@ True
 ```
  
 ### Type checking
-Specifying type for parameters and for return value will exactly meet the functionality. This is mandatory in KwikAPI (return type can be None)
+Specifying type for parameters and for return value will exactly meet the functionality. This is mandatory in KwikAPI (If the method don't return anything then `None` should be specified as return type)
 
 ```python
 >>> class Calc(object):
@@ -207,7 +207,9 @@ Specifying type for parameters and for return value will exactly meet the functi
 
 ```
 
-KwikAPI supports builtin types and few types from typing such as Union, List, Tuple, Dict, Generator and Any
+KwikAPI supports builtin types and types from typing such as Union, List, Tuple, Dict, Generator, Any and so on.
+
+Here are some examples of how to use type hints.
 
 - If a single argument expects two or more types then Union can be used
 ```python
@@ -529,9 +531,13 @@ To check API methods under specific version we can provide URL as http://localho
 >>> pprint(res['result'])
 {'add': {'doc': None,
          'gives_stream': False,
-         'params': {'a': {'default': None, 'required': True, 'type': 'int'},
-                    'b': {'default': None, 'required': True, 'type': 'int'}},
-         'return_type': 'int'}}
+         'params': {'a': {'default': None,
+                          'required': True,
+                          'type': "<class 'int'>"},
+                    'b': {'default': None,
+                          'required': True,
+                          'type': "<class 'int'>"}},
+         'return_type': "<class 'int'>"}}
 
 >>> res['success']
 True
