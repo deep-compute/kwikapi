@@ -512,6 +512,8 @@ To see available API methods the URL will be http://localhost:8888/api/apidoc fo
 
 To check API methods under specific version we can provide URL as http://localhost:8888/api/version/apidoc
 
+To check API methods under specific version and namespace we can provide URL as http://localhost:8888/api/version/namespace/apidoc
+
 ```python
 >>> import json
 >>> from pprint import pprint
@@ -523,7 +525,7 @@ To check API methods under specific version we can provide URL as http://localho
 ...        return a + b
 
 >>> api = API()
->>> api.register(Calc(), "v1")
+>>> api.register(Calc(), "v1", "calc")
 
 >>> req = MockRequest(url="/api/v1/apidoc")
 >>> res = json.loads(BaseRequestHandler(api).handle_request(req))
@@ -539,6 +541,21 @@ To check API methods under specific version we can provide URL as http://localho
                           'type': "<class 'int'>"}},
          'return_type': "<class 'int'>"}}
 
+>>> res['success']
+True
+
+>>> req = MockRequest(url="/api/v1/calc/apidoc")
+>>> res = json.loads(BaseRequestHandler(api).handle_request(req))
+>>> pprint(res['result'])
+{'add': {'doc': None,
+         'gives_stream': False,
+         'params': {'a': {'default': None,
+                          'required': True,
+                          'type': "<class 'int'>"},
+                    'b': {'default': None,
+                          'required': True,
+                          'type': "<class 'int'>"}},
+         'return_type': "<class 'int'>"}}
 >>> res['success']
 True
 
