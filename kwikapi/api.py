@@ -255,10 +255,19 @@ class TypeNotSpecified(BaseException):
     def message(self):
         return 'Please specify type for the argument "%s"' % (self.arg)
 
+class UnknownVersionOrNamespace(BaseException):
+    def __init__(self, arg):
+        self.arg = arg
+
+    @property
+    def message(self):
+        return 'No methods associated with this version "%s" or namespace "%s".' % (self.arg[0], self.arg[1])
+
 class API(object):
     """
     A collection of APIFragments
     """
+
     TYPING_ANNOTATIONS = [typing.List, typing.Dict, typing.Tuple, typing.Generator, typing.Union, typing.Any,
             typing.NewType, typing.Callable, typing.Mapping, typing.Sequence, typing.TypeVar, typing.Generic,
             typing.Sized, typing.Type, typing.Reversible, typing.SupportsInt, typing.SupportsFloat,
@@ -392,23 +401,39 @@ class API(object):
 
     def isversion(self, version):
         for key in self._api_funcs:
-            if version in key:
+            if version == key[0]:
                 return True
 
-    def doc(self, version=None, nsp=None):
+    def doc(self, version=None, namespace=None):
         versions = {}
-        for (ver, fn_name, namespace), fninfo in self._api_funcs.items():
-            vfns = versions.get(ver, {})
+        namespaces = {}
 
+        for (ver, fn_name, nsp), fninfo in self._api_funcs.items():
+            # Some of the types are not json serializable.
+            # So we are converting types to strings
             for key in fninfo['info']['params'].keys():
                 fninfo['info']['params'][key]['type'] = str(fninfo['info']['params'][key]['type'])
             fninfo['info']['return_type'] = str(fninfo['info']['return_type'])
 
+            vfns = versions.get(ver, {})
             vfns[fn_name] = fninfo['info']
             versions[ver] = vfns
 
-        if version:
-            return versions[version]
+            nsfns = namespaces.get((ver, nsp), {})
+            nsfns[fn_name] = fninfo['info']
+            namespaces[(ver, nsp)] = nsfns
+
+        try:
+            if version and namespace:
+                return namespaces[(version, namespace)]
+        except KeyError:
+            raise UnknownVersionOrNamespace((version, namespace))
+
+        try:
+            if version:
+                return versions[version]
+        except KeyError:
+            raise UnknownVersion(version)
 
         return versions
 
@@ -451,22 +476,14 @@ class BaseRequestHandler(object):
         url_components = request.url.split('/')
         version = url_components[2]
 
-        if 'apidoc' in url_components:
-            if self.api.isversion(version):
-                return self.api.doc(version)
-            elif url_components[2] == 'apidoc':
-                return self.api.doc(self.api.get_default_version())
-            else:
-                raise UnknownVersion(version)
-
         namespace = ''
         if self.api.isversion(version):
-            for namespaceparts in url_components[3:len(url_components)-1]:
+            for namespaceparts in url_components[3:-1]:
                 namespace = namespace + namespaceparts + '/'
         else:
             version = self.api.get_default_version()
 
-            for namespaceparts in url_components[2:len(url_components)-1]:
+            for namespaceparts in url_components[2:-1]:
                 namespace = namespace + namespaceparts + '/'
 
         if namespace == '':
@@ -474,15 +491,19 @@ class BaseRequestHandler(object):
         else:
             namespace = namespace.rstrip('/')
 
-        fn_name = url_components[len(url_components)-1]
+        request.apidoc = False
+        if 'apidoc' in url_components:
+            request.apidoc = True
+
+            return self.api.doc(version, namespace)
+
+        fn_name = url_components[-1]
 
         if '?' in fn_name:
-
             fn_name = fn_name.split('?')
 
             query_string = fn_name[1]
             fn_name = fn_name[0]
-
         else:
             query_string = ''
 
@@ -547,7 +568,7 @@ class BaseRequestHandler(object):
         try:
             result = self._resolve_call_info(request)
 
-            if request.fn_params:
+            if not request.apidoc:
 
                 # invoke the API function
                 result = request.fn(**request.fn_params)
