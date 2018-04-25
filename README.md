@@ -97,6 +97,7 @@ True
 - Protocol handling
 - API Doc
 - Bulk request handling
+- KwikAPI Client
 
 ### Versioning support
 Versioning support will be used if user wants different versions of functionality with slightly changed behaviour.
@@ -414,7 +415,7 @@ $ wget "http://localhost:8888/api/v1/streaming_request_test" --post-file /tmp/nu
 ```
 
 ### Protocol handling
-KwikAPI supports JSON protocol and Messagepack protocol
+KwikAPI supports JSON, Messagepack, Pickle and Numpy protocols
 
 #### KwikAPI also supports custom protocols instead of using existing protocols
 ```python 
@@ -432,7 +433,7 @@ KwikAPI supports JSON protocol and Messagepack protocol
 >>> class CustomProtocol(BaseProtocol):
 ...    @staticmethod
 ...    def get_name():
-...        return 'json'
+...        return 'custom'
 
 ...    @staticmethod
 ...    def serialize(data):
@@ -483,8 +484,7 @@ True
 
 >>> api = API()
 >>> api.register(Calc(), "v1") # `v1` is the version of this example
->>> base = BaseRequestHandler(api)
->>> base.set_default_protocol('messagepack')
+>>> base = BaseRequestHandler(api, default_protocol='messagepack')
 
 >>> req = MockRequest(url="/api/v1/add?a=10&b=20")
 >>> res = msgpack.unpackb(base.handle_request(req))
@@ -503,6 +503,8 @@ ex:
 ```bash
 $ wget "http://localhost:8888/api/v1/add" --header="X-KwikAPI-Protocol: messagepack" --post-file /tmp/data.msgpack
 $ wget "http://localhost:8888/api/v1/subtract" --header="X-KwikAPI-Protocol: json" --post-data '{"a": 10, "b": 20}'
+$ wget "http://localhost:8888/api/v1/add" --header="X-KwikAPI-Protocol: pickle" --post-file /tmp/data.pickle
+$ wget "http://localhost:8888/api/v1/add" --header="X-KwikAPI-Protocol: numpy" --post-file /tmp/data.numpy
 ```
 
 ### API Doc
@@ -567,7 +569,25 @@ When making a large number of requests, the overhead of network latency and HTTP
 can slow down the operation. It is convenient and necessary to have a mechanism to sent a set of requests in
 bulk.
 
-We are going to support bulk requests in `KwikAPI` in future.
+### KwikAPI Client
+`KwikAPI` provides client tool which will help in making calls to server. The `KwikAPI Client` will take
+care of serialization and deserialization of the data.
+
+Usage:
+```python
+from kwikapi import Client
+
+c = Client('http://localhost:8818/api/', version='v1')
+print(c.add(a=10, b=10))
+
+# Namespace will be used with Client object
+
+print(c.namespace.add(a=10, b=10))
+
+# Parameters can be changed that are passed to the Client object
+
+print(c(version='v2', prtocol='pickle').namespace.add(a=10, b=10))
+```
 
 ## Run test cases
 ```bash
