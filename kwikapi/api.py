@@ -1,98 +1,45 @@
 # -*- coding: utf-8 -*
+from future.standard_library import install_aliases
+install_aliases()
+
 import ast
 import abc
+import time
 import inspect
-import json
 import traceback
-from urllib.parse import parse_qs
+from urllib.parse import parse_qs, urlparse
 import typing
+import concurrent.futures
 
-import msgpack
-from deeputil import Dummy
+from deeputil import Dummy, AttrDict, generate_random_string
+
+from .protocols import PROTOCOLS, DEFAULT_PROTOCOL
+
+from .exception import DuplicateAPIFunction, UnknownAPIFunction
+from .exception import ProtocolAlreadyExists, UnknownProtocol
+from .exception import UnknownVersion, UnsupportedType, TypeNotSpecified
+from .exception import UnknownVersionOrNamespace
+
+from .utils import get_loggable_params
 
 DUMMY_LOG = Dummy()
 
-class BaseProtocol(object):
-    __metaclass__ = abc.ABCMeta
+PROTOCOL_HEADER = 'X-KwikAPI-Protocol'
+NETPATH_HEADER = 'X-KwikAPI-Netpath'
 
-    @abc.abstractmethod
-    def get_name(self):
-        pass
+class Counter:
+    def __init__(self, v=0):
+        self.v = v
 
-    @abc.abstractmethod
-    def serialize(self, data):
-        pass
+    def increment(self, v):
+        self.v += v
 
-    @abc.abstractmethod
-    def deserialize(self, data):
-        pass
+    def decrement(self, v):
+        self.v -= v
 
-    @abc.abstractmethod
-    def deserialize_stream(self, data):
-        pass
-
-    @abc.abstractmethod
-    def get_record_separator(self):
-        pass
-
-    @abc.abstractmethod
-    def get_mime_type(self):
-        pass
-
-class JsonProtocol(BaseProtocol):
-
-    @staticmethod
-    def get_name():
-        return 'json'
-
-    @staticmethod
-    def serialize(data):
-        return json.dumps(data)
-
-    @staticmethod
-    def deserialize(data):
-        return json.loads(data.decode('utf-8'))
-
-    @classmethod
-    def deserialize_stream(cls, data):
-        for line in data:
-            yield cls.deserialize(line)
-
-    @staticmethod
-    def get_record_separator():
-        return '\n'
-
-    @staticmethod
-    def get_mime_type():
-        return 'application/json'
-
-class MessagePackProtocol(BaseProtocol):
-
-    @staticmethod
-    def get_name():
-        return 'messagepack'
-
-    @staticmethod
-    def serialize(data):
-        return msgpack.packb(data)
-
-    @staticmethod
-    def deserialize(data):
-        return {k.decode('utf8'): v for k, v in msgpack.unpackb(data).items()}
-
-    @classmethod
-    def deserialize_stream(cls, data):
-        unpacker = msgpack.Unpacker(data)
-        for item in unpacker:
-            yield item
-
-    @staticmethod
-    def get_record_separator():
-        return ''
-
-    @staticmethod
-    def get_mime_type():
-        return 'application/x-msgpack'
+    @property
+    def value(self):
+        return self.v
 
 class BaseRequest(object):
     __metaclass__ = abc.ABCMeta
@@ -102,6 +49,8 @@ class BaseRequest(object):
         self.fn = None
         self.fn_params = None
         self.response = None
+        self.protocol = None
+        self.id = generate_random_string(length=5).decode('utf8')
 
     @abc.abstractproperty
     def url(self):
@@ -128,19 +77,34 @@ class BaseResponse(object):
         self.raw_response = None
 
     @abc.abstractmethod
-    def write(self, data, proto, stream=False):
+    def write(self, data, protocol, stream=False):
         self._data = None
+        C = Counter
 
         if not stream:
-            self._data = proto.serialize(data)
-            return
+            t = time.time()
+            self._data = protocol.serialize(data)
+            return C(len(self._data)), C(time.time() - t)
+
+
+        n = C(0)
+        t = C(0.0)
 
         def fn():
             for x in data:
-                yield proto.serialize(x)
-                yield proto.get_record_separator()
+                _t = time.time()
+                d = protocol.serialize(x)
+                t.increment(time.time() - _t)
+
+                s = protocol.get_record_separator()
+                n.increment(len(d) + len(s))
+
+                yield d
+                yield s
 
         self._data = fn()
+
+        return n, t
 
     @abc.abstractmethod
     def flush(self):
@@ -180,10 +144,12 @@ class MockResponse(BaseResponse):
         self.headers = {}
         self.raw_response = None
 
-    def write(self, data, proto, stream=False):
-        super().write(data, proto, stream=stream)
+    def write(self, data, protocol, stream=False):
+        n, t = super().write(data, protocol, stream=stream)
 
         self.raw_response = self._data
+
+        return n, t
 
     def flush(self):
         pass
@@ -191,83 +157,13 @@ class MockResponse(BaseResponse):
     def close(self):
         pass
 
-class BaseException(Exception):
-    __metaclass__ = abc.ABCMeta
-
-    @abc.abstractmethod
-    def message(self):
-        pass
-
-class DuplicateAPIFunction(BaseException):
-    def __init__(self, version, api_fn):
-        self.version = version
-        self.api_fn = api_fn
-
-    @property
-    def message(self):
-        return '"%s" API function already exists in the version "%s"' % (self.api_fn, self.version)
-
-class UnknownAPIFunction(BaseException):
-    def __init__(self, api_fn_name):
-        self.fn_name = api_fn_name
-
-    @property
-    def message(self):
-        return 'Unknown API Function: "%s"' % self.fn_name
-
-class ProtocolAlreadyExists(BaseException):
-    def __init__(self, proto):
-        self.proto = proto
-
-    @property
-    def message(self):
-        return '"%s" is already exists' % self.proto
-
-class UnknownProtocol(BaseException):
-    def __init__(self, proto):
-        self.proto = proto
-
-    @property
-    def message(self):
-        return '"%s" protocol is not exist to make it default' % self.proto
-
-class UnknownVersion(BaseException):
-    def __init__(self, version):
-        self.version = version
-
-    @property
-    def message(self):
-        return '"%s" There are no methods associated with this version' % self.version
-
-class UnsupportedType(BaseException):
-    def __init__(self, _type):
-        self._type = _type
-
-    @property
-    def message(self):
-        return '"%s" type is not supported' % self._type
-
-class TypeNotSpecified(BaseException):
-    def __init__(self, arg):
-        self.arg = arg
-
-    @property
-    def message(self):
-        return 'Please specify type for the argument "%s"' % (self.arg)
-
-class UnknownVersionOrNamespace(BaseException):
-    def __init__(self, arg):
-        self.arg = arg
-
-    @property
-    def message(self):
-        return 'No methods associated with this version "%s" or namespace "%s".' % (self.arg[0], self.arg[1])
-
 class API(object):
     """
     A collection of APIFragments
     """
 
+    # FIXME: need to find a way to not enumerate like this
+    # but do it automatically by introspecting the typing module
     TYPING_ANNOTATIONS = [typing.List, typing.Dict, typing.Tuple, typing.Generator, typing.Union, typing.Any,
             typing.NewType, typing.Callable, typing.Mapping, typing.Sequence, typing.TypeVar, typing.Generic,
             typing.Sized, typing.Type, typing.Reversible, typing.SupportsInt, typing.SupportsFloat,
@@ -276,10 +172,24 @@ class API(object):
 
     ALLOWED_ANNOTATIONS = [bool, int, float, str, list, tuple, dict, Exception, Request] + TYPING_ANNOTATIONS
 
-    def __init__(self, log=DUMMY_LOG, default_version=None):
+    THREADPOOL_SIZE = 32
+
+    def __init__(self, default_version=None, id='',
+            threadpool=None, threadpool_size=THREADPOOL_SIZE,
+            log=DUMMY_LOG):
+
         self._api_funcs = {}
-        self.log = log
+        self.log = log.bind(api_id=id)
+        self.id = id
         self.default_version = default_version
+
+        self.threadpool = None
+
+        if threadpool:
+            self.threadpool = threadpool
+        else:
+            if threadpool_size:
+                self.threadpool = concurrent.futures.ThreadPoolExecutor(max_workers=threadpool_size)
 
     def _get_fn_info(self, fn):
         argspec = inspect.getfullargspec(fn)
@@ -397,7 +307,8 @@ class API(object):
         self._ensure_type_annotations(funcs)
         self._ensure_no_overlap(funcs)
         self._api_funcs.update(funcs)
-        api_fragment.log = self.log
+        if not getattr(api_fragment, 'log', None):
+            api_fragment.log = self.log
 
     def isversion(self, version):
         for key in self._api_funcs:
@@ -447,65 +358,72 @@ class API(object):
         return self._api_funcs[(version, fn_name, namespace)]
 
 class BaseRequestHandler(object):
+    PROTOCOLS = PROTOCOLS
+    DEFAULT_PROTOCOL = DEFAULT_PROTOCOL
 
-    PROTOCOLS = dict((p.get_name(), p) for p in [
-        JsonProtocol,
-        MessagePackProtocol,
-    ])
-
-    DEFAULT_PROTOCOL = JsonProtocol.get_name()
-
-    def __init__(self, api, default_version=None):
+    def __init__(self, api,
+            default_version=None, default_protocol=DEFAULT_PROTOCOL,
+            log=DUMMY_LOG):
         self.api = api
         self.default_version = default_version
-        self._protocols = dict(self.PROTOCOLS)
+        self.default_protocol = default_protocol
+        self.log = log
 
-    def set_default_protocol(self, default_proto=JsonProtocol.get_name()):
-        self.DEFAULT_PROTOCOL = default_proto
+        self._protocols = self.PROTOCOLS
 
-        if self.DEFAULT_PROTOCOL not in self.PROTOCOLS:
-            raise UnknownProtocol(self.DEFAULT_PROTOCOL)
+    def set_default_protocol(self, default_proto=DEFAULT_PROTOCOL):
+        if protocol not in self.PROTOCOLS:
+            raise UnknownProtocol(protocol)
 
-    def register_protocol(self, proto, update=True):
-        name = proto.get_name()
+        self.default_protocol = protocol
+
+    def register_protocol(self, protocol, update=True):
+        name = protocol.get_name()
         if not update and name in self._protocols:
-            raise ProtocolAlreadyExists(proto)
-        self._protocols[name] = proto
+            raise ProtocolAlreadyExists(protocol)
+        self._protocols[name] = protocol
 
     def _resolve_call_info(self, request):
-        url_components = request.url.split('/')
-        version = url_components[2]
+        r = AttrDict()
+        r.time_deserialize = 0.0
+        r.namespace = None
+        r.function = None
+        r.method = 'GET'
 
-        namespace = ''
+        urlp = urlparse(request.url)
+        path_parts = urlp.path.lstrip('/').split('/')
+        path_parts = path_parts[1:] # ignore "/api/" part
+
+        version = path_parts[0]
+        fn_name = path_parts[-1]
+        path_parts = path_parts[:-1]
+        r.function = fn_name
+
         if self.api.isversion(version):
-            for namespaceparts in url_components[3:-1]:
-                namespace = namespace + namespaceparts + '/'
+            namespace = '/'.join(path_parts[1:])
         else:
             version = self.api.get_default_version()
+            namespace = '/'.join(path_parts)
 
-            for namespaceparts in url_components[2:-1]:
-                namespace = namespace + namespaceparts + '/'
+        namespace = namespace if namespace else None
+        r.namespace = namespace or ''
 
-        if namespace == '':
-            namespace = None
-        else:
-            namespace = namespace.rstrip('/')
+        request.netpath = '{netpath}=>{id}_{reqid}({namespace}/{function})'.format(
+            netpath=request.headers.get(NETPATH_HEADER, ''),
+            id=self.api.id,
+            reqid=request.id,
+            namespace=r.namespace,
+            function=fn_name,
+        )
+
+        request.log = self.log.bind(__netpath=request.netpath)
 
         request.apidoc = False
-        if 'apidoc' in url_components:
+        if fn_name == 'apidoc':
             request.apidoc = True
+            return self.api.doc(version, namespace), r
 
-            return self.api.doc(version, namespace)
-
-        fn_name = url_components[-1]
-
-        if '?' in fn_name:
-            fn_name = fn_name.split('?')
-
-            query_string = fn_name[1]
-            fn_name = fn_name[0]
-        else:
-            query_string = ''
+        query_string = urlp.query
 
         request.fn_name = fn_name
         if not self.api.has_api_fn(fn_name, version, namespace):
@@ -523,11 +441,12 @@ class BaseRequestHandler(object):
         for key, val in param_vals.items():
             try:
                 param_vals[key] = ast.literal_eval(val)
-            except:
+            except: # FIXME: bald except!
                 param_vals[key] = val
 
         if request.method == 'POST':
-            proto = self._find_request_protocol(request)
+            r.method = 'POST'
+            protocol = self._find_request_protocol(request)
 
             for stream_param in params:
                 try:
@@ -539,67 +458,66 @@ class BaseRequestHandler(object):
             else:
                 stream_param = None
 
+            # FIXME: request.body: what type is it supposed to be? byte string or file like?
             if not stream_param:
-                try:
-                    param_vals.update(proto.deserialize(request.body.read()))
-                except AttributeError:
-                    param_vals.update(proto.deserialize(request.body))
+                t = time.time()
+                p = protocol.deserialize(request.body)
+                r.deserialize_time = time.time() - t
+
+                param_vals.update(protocol.deserialize(request.body))
             else:
-                param_vals[stream_param] = proto.deserialize_stream(request.body)
+                param_vals[stream_param] = protocol.deserialize_stream(request.body)
 
         if info.get('req', None):
             param_vals['req'] = request
 
         request.fn_params = param_vals
 
-        return request
+        return request, r
 
-    PROTOCOL_HEADER = 'X-KwikAPI-Protocol'
     def _find_request_protocol(self, request):
-        proto = request.headers.get(self.PROTOCOL_HEADER, self.DEFAULT_PROTOCOL)
-        return self.PROTOCOLS[proto]
+        protocol = request.headers.get(PROTOCOL_HEADER, self.default_protocol)
+        return self.PROTOCOLS[protocol]
 
     def handle_request(self, request):
-
-        proto = self._find_request_protocol(request)
+        #import pdb; pdb.set_trace()
+        protocol = self._find_request_protocol(request)
+        request.protocol = protocol.get_name()
         response = request.response
-        response.headers['Content-Type'] = proto.get_mime_type()
+        response.headers['Content-Type'] = protocol.get_mime_type()
 
         try:
-            result = self._resolve_call_info(request)
+            result, rinfo = self._resolve_call_info(request)
 
             if not request.apidoc:
-
                 # invoke the API function
+                tcompute = time.time()
                 result = request.fn(**request.fn_params)
+                tcompute = time.time() - tcompute
 
                 # Serialize the response
                 if request.fn.__func__.func_info['gives_stream']:
-                    response.write(result, proto, stream=True)
-
+                    n, t = response.write(result, protocol, stream=True)
                 else:
-                    response.write(dict(
-                        success=True,
-                        result=result,
-                    ), proto)
-
+                    n, t = response.write(dict(success=True, result=result), protocol)
             else:
-                response.write(dict(
-                    success=True,
-                    result=result,
-                ), proto)
+                # FIXME: Remove tcompute from here when apidoc is made as api method
+                tcompute = None
+                n, t = response.write(dict(success=True, result=result), protocol)
+
+            request.log.info('kwikapi.handle_request',
+                    function=rinfo.function, namespace=rinfo.namespace,
+                    method=rinfo.method, compute_time=tcompute, serialize_time=t.value,
+                    deserialize_time=rinfo.time_deserialize,
+                    __params=get_loggable_params(request.fn_params or {}),
+                    protocol=request.protocol, type='metric')
 
         except Exception as e:
             message = e.message if hasattr(e, 'message') else str(e)
-            message = '%s: %s' % (e.__class__.__name__, message)
+            message = '[(%s) %s: %s]' % (self.api.id, e.__class__.__name__, message)
 
-            # TODO: remove after we can log this to logger
-            print(traceback.print_tb(e.__traceback__))
-
-            response.write(dict(
-                success=False,
-                message=message
-            ), proto)
+            self.log.exception('handle_request_error', message=message)
+            response.write(dict(success=False, message=message), protocol)
 
         response.flush()
         response.close()
