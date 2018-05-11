@@ -141,7 +141,8 @@ class NumpyProtocol(BaseProtocol):
 
         data = walk_data_structure(data, _serialize_cb)
         data = json.dumps(data).encode('utf8')
-        return b''.join([data, b'\n'] + arrays)
+        data = b''.join([data, b'\n'] + arrays)
+        return data
 
     @staticmethod
     def deserialize(data):

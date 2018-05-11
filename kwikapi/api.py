@@ -9,7 +9,7 @@ import inspect
 import traceback
 from urllib.parse import parse_qs, urlparse
 import typing
-from multiprocessing.pool import ThreadPool as Pool
+import concurrent.futures
 
 from deeputil import Dummy, AttrDict, generate_random_string
 
@@ -19,6 +19,8 @@ from .exception import DuplicateAPIFunction, UnknownAPIFunction
 from .exception import ProtocolAlreadyExists, UnknownProtocol
 from .exception import UnknownVersion, UnsupportedType, TypeNotSpecified
 from .exception import UnknownVersionOrNamespace
+
+from .utils import get_loggable_params
 
 DUMMY_LOG = Dummy()
 
@@ -83,6 +85,7 @@ class BaseResponse(object):
             t = time.time()
             self._data = protocol.serialize(data)
             return C(len(self._data)), C(time.time() - t)
+
 
         n = C(0)
         t = C(0.0)
@@ -186,7 +189,7 @@ class API(object):
             self.threadpool = threadpool
         else:
             if threadpool_size:
-                self.threadpool = Pool(threadpool_size)
+                self.threadpool = concurrent.futures.ThreadPoolExecutor(max_workers=threadpool_size)
 
     def _get_fn_info(self, fn):
         argspec = inspect.getfullargspec(fn)
@@ -363,12 +366,12 @@ class BaseRequestHandler(object):
             log=DUMMY_LOG):
         self.api = api
         self.default_version = default_version
-        self._set_default_protocol(default_protocol)
+        self.default_protocol = default_protocol
         self.log = log
 
         self._protocols = self.PROTOCOLS
 
-    def _set_default_protocol(self, protocol=DEFAULT_PROTOCOL):
+    def set_default_protocol(self, default_proto=DEFAULT_PROTOCOL):
         if protocol not in self.PROTOCOLS:
             raise UnknownProtocol(protocol)
 
@@ -476,21 +479,8 @@ class BaseRequestHandler(object):
         protocol = request.headers.get(PROTOCOL_HEADER, self.default_protocol)
         return self.PROTOCOLS[protocol]
 
-    def _get_loggable_params(self, params):
-        _params = {}
-
-        for k, v in params.items():
-            if isinstance(v, (list, dict, tuple)):
-                continue
-
-            if isinstance(v, str) and len(v) > 512: # FIXME: don't hardcode num
-                continue
-
-            _params[k] = v
-
-        return _params
-
     def handle_request(self, request):
+        #import pdb; pdb.set_trace()
         protocol = self._find_request_protocol(request)
         request.protocol = protocol.get_name()
         response = request.response
@@ -511,6 +501,7 @@ class BaseRequestHandler(object):
                 else:
                     n, t = response.write(dict(success=True, result=result), protocol)
             else:
+                # FIXME: Remove tcompute from here when apidoc is made as api method
                 tcompute = None
                 n, t = response.write(dict(success=True, result=result), protocol)
 
@@ -518,7 +509,7 @@ class BaseRequestHandler(object):
                     function=rinfo.function, namespace=rinfo.namespace,
                     method=rinfo.method, compute_time=tcompute, serialize_time=t.value,
                     deserialize_time=rinfo.time_deserialize,
-                    __params=self._get_loggable_params(request.fn_params or {}),
+                    __params=get_loggable_params(request.fn_params or {}),
                     protocol=request.protocol, type='metric')
 
         except Exception as e:

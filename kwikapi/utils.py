@@ -46,3 +46,17 @@ def liteval(x):
         pass
 
     return x
+
+def get_loggable_params(kwargs):
+    _kwargs = {}
+
+    for k, v in kwargs.items():
+        if not isinstance(v, (int, float, np.number, str)):
+            continue
+
+        if isinstance(v, str) and len(v) > 250:
+            continue
+
+        _kwargs[k] = v
+
+    return _kwargs
