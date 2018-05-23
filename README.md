@@ -261,7 +261,7 @@ Here are some examples of how to use type hints.
 ```python
 >>> from typing import Generator
 >>> class Calc(object):
-...    def add(self, a: Generator[int, None, None]) -> int:
+...    def add(self, a: Generator) -> int:
 ...        _sum = 0
 ...        for i in a:
 ...            _sum += i
@@ -386,12 +386,12 @@ KwikAPI supports request and response Streaming
 ```python
 class MyAPI(object):
     # Streaming response
-    def streaming_response_test(self, num: int) -> Generator[int, None, None]:
+    def streaming_response_test(self, num: int) -> Generator:
         for i in range(num):
             yield {i: i}
 
     # Streaming request
-    def streaming_request_test(self, numbers: Generator[int, None, None]) -> int:
+    def streaming_request_test(self, numbers: Generator) -> int:
         _sum = 0
         for i in numbers:
             _sum += i
@@ -507,62 +507,6 @@ $ wget "http://localhost:8888/api/v1/add" --header="X-KwikAPI-Protocol: pickle" 
 $ wget "http://localhost:8888/api/v1/add" --header="X-KwikAPI-Protocol: numpy" --post-file /tmp/data.numpy
 ```
 
-### API Doc
-Using API Doc we can look at what are the all API methods available
-
-To see available API methods the URL will be http://localhost:8888/api/apidoc for default version
-
-To check API methods under specific version we can provide URL as http://localhost:8888/api/version/apidoc
-
-To check API methods under specific version and namespace we can provide URL as http://localhost:8888/api/version/namespace/apidoc
-
-```python
->>> import json
->>> from pprint import pprint
-
->>> from kwikapi import API, MockRequest, BaseRequestHandler
-
->>> class Calc(object):
-...    def add(self, a: int, b: int) -> int:
-...        return a + b
-
->>> api = API()
->>> api.register(Calc(), "v1", "calc")
-
->>> req = MockRequest(url="/api/v1/apidoc")
->>> res = json.loads(BaseRequestHandler(api).handle_request(req))
-
->>> pprint(res['result'])
-{'add': {'doc': None,
-         'gives_stream': False,
-         'params': {'a': {'default': None,
-                          'required': True,
-                          'type': "<class 'int'>"},
-                    'b': {'default': None,
-                          'required': True,
-                          'type': "<class 'int'>"}},
-         'return_type': "<class 'int'>"}}
-
->>> res['success']
-True
-
->>> req = MockRequest(url="/api/v1/calc/apidoc")
->>> res = json.loads(BaseRequestHandler(api).handle_request(req))
->>> pprint(res['result'])
-{'add': {'doc': None,
-         'gives_stream': False,
-         'params': {'a': {'default': None,
-                          'required': True,
-                          'type': "<class 'int'>"},
-                    'b': {'default': None,
-                          'required': True,
-                          'type': "<class 'int'>"}},
-         'return_type': "<class 'int'>"}}
->>> res['success']
-True
-
-```
-
 ### Bulk request handling
 It will be very convenient if the user has facility to make bulk requests.
 When making a large number of requests, the overhead of network latency and HTTP request/response processing
@@ -578,6 +522,8 @@ Usage:
 from kwikapi import Client
 
 c = Client('http://localhost:8818/api/', version='v1')
+
+# `add` is the api method
 print(c.add(a=10, b=10))
 
 # Namespace will be used with Client object

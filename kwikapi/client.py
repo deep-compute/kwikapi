@@ -124,10 +124,10 @@ class Client:
             # FIXME: support streaming in both directions
             _kwargs = get_loggable_params(kwargs or {})
             self._log.debug('kwikapi.client.__call__',
-                    path=self._path, kwargs=_kwargs, get_params=get_params,
+                    path=self._path, kwargs=_kwargs,
                     url=self._url, version=self._version, protocol=self._protocol)
 
-            post_data = self._serialize_params(kwargs, self._protocol)
+            post_body = self._serialize_params(kwargs, self._protocol)
             url, post_body, headers = self._prepare_request(post_body)
             res = self._make_request(url, post_body, headers)
             res = self._deserialize_response(res, self._protocol)

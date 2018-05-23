@@ -14,11 +14,11 @@ import concurrent.futures
 from deeputil import Dummy, AttrDict, generate_random_string
 
 from .protocols import PROTOCOLS, DEFAULT_PROTOCOL
+from .apidoc import ApiDoc
 
 from .exception import DuplicateAPIFunction, UnknownAPIFunction
 from .exception import ProtocolAlreadyExists, UnknownProtocol
-from .exception import UnknownVersion, UnsupportedType, TypeNotSpecified
-from .exception import UnknownVersionOrNamespace
+from .exception import UnsupportedType, TypeNotSpecified
 
 from .utils import get_loggable_params
 
@@ -189,7 +189,10 @@ class API(object):
             self.threadpool = threadpool
         else:
             if threadpool_size:
-                self.threadpool = concurrent.futures.ThreadPoolExecutor(max_workers=threadpool_size)
+                pass
+                #self.threadpool = concurrent.futures.ThreadPoolExecutor(max_workers=threadpool_size)
+
+        self.register(ApiDoc(self._api_funcs), "v1")
 
     def _get_fn_info(self, fn):
         argspec = inspect.getfullargspec(fn)
@@ -315,39 +318,6 @@ class API(object):
             if version == key[0]:
                 return True
 
-    def doc(self, version=None, namespace=None):
-        versions = {}
-        namespaces = {}
-
-        for (ver, fn_name, nsp), fninfo in self._api_funcs.items():
-            # Some of the types are not json serializable.
-            # So we are converting types to strings
-            for key in fninfo['info']['params'].keys():
-                fninfo['info']['params'][key]['type'] = str(fninfo['info']['params'][key]['type'])
-            fninfo['info']['return_type'] = str(fninfo['info']['return_type'])
-
-            vfns = versions.get(ver, {})
-            vfns[fn_name] = fninfo['info']
-            versions[ver] = vfns
-
-            nsfns = namespaces.get((ver, nsp), {})
-            nsfns[fn_name] = fninfo['info']
-            namespaces[(ver, nsp)] = nsfns
-
-        try:
-            if version and namespace:
-                return namespaces[(version, namespace)]
-        except KeyError:
-            raise UnknownVersionOrNamespace((version, namespace))
-
-        try:
-            if version:
-                return versions[version]
-        except KeyError:
-            raise UnknownVersion(version)
-
-        return versions
-
     def has_api_fn(self, fn_name, version, namespace):
         return (version, fn_name, namespace) in self._api_funcs
 
@@ -418,11 +388,6 @@ class BaseRequestHandler(object):
 
         request.log = self.log.bind(__netpath=request.netpath)
 
-        request.apidoc = False
-        if fn_name == 'apidoc':
-            request.apidoc = True
-            return self.api.doc(version, namespace), r
-
         query_string = urlp.query
 
         request.fn_name = fn_name
@@ -450,7 +415,7 @@ class BaseRequestHandler(object):
 
             for stream_param in params:
                 try:
-                    if issubclass(params[stream_param]['type'], typing.Generator):
+                    if params[stream_param]['type'] == typing.Generator:
                         stream_param = stream_param
                         break
                 except AttributeError:
@@ -473,7 +438,7 @@ class BaseRequestHandler(object):
 
         request.fn_params = param_vals
 
-        return request, r
+        return r
 
     def _find_request_protocol(self, request):
         protocol = request.headers.get(PROTOCOL_HEADER, self.default_protocol)
@@ -487,22 +452,17 @@ class BaseRequestHandler(object):
         response.headers['Content-Type'] = protocol.get_mime_type()
 
         try:
-            result, rinfo = self._resolve_call_info(request)
+            rinfo = self._resolve_call_info(request)
 
-            if not request.apidoc:
-                # invoke the API function
-                tcompute = time.time()
-                result = request.fn(**request.fn_params)
-                tcompute = time.time() - tcompute
+            # invoke the API function
+            tcompute = time.time()
+            result = request.fn(**request.fn_params)
+            tcompute = time.time() - tcompute
 
-                # Serialize the response
-                if request.fn.__func__.func_info['gives_stream']:
-                    n, t = response.write(result, protocol, stream=True)
-                else:
-                    n, t = response.write(dict(success=True, result=result), protocol)
+            # Serialize the response
+            if request.fn.__func__.func_info['gives_stream']:
+                n, t = response.write(result, protocol, stream=True)
             else:
-                # FIXME: Remove tcompute from here when apidoc is made as api method
-                tcompute = None
                 n, t = response.write(dict(success=True, result=result), protocol)
 
             request.log.info('kwikapi.handle_request',
