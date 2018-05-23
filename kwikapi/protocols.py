@@ -43,8 +43,6 @@ class JsonProtocol(BaseProtocol):
 
     @staticmethod
     def serialize(data):
-        data = to_python_type(data)
-
         return json.dumps(data)
 
     @staticmethod
@@ -72,13 +70,11 @@ class MessagePackProtocol(BaseProtocol):
 
     @staticmethod
     def serialize(data):
-        data = to_python_type(data)
-
         return msgpack.packb(data)
 
     @staticmethod
     def deserialize(data):
-        return {k.decode('utf8'): v for k, v in msgpack.unpackb(data).items()}
+        return msgpack.unpackb(data, encoding="utf-8")
 
     @classmethod
     def deserialize_stream(cls, data):
