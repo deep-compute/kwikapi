@@ -507,6 +507,75 @@ $ wget "http://localhost:8888/api/v1/add" --header="X-KwikAPI-Protocol: pickle" 
 $ wget "http://localhost:8888/api/v1/add" --header="X-KwikAPI-Protocol: numpy" --post-file /tmp/data.numpy
 ```
 
+### API Doc
+Using API Doc we can look at what are the all API methods available
+
+To see available API methods the URL will be http://localhost:8888/api/v1/apidoc for default version
+
+To check API methods under specific version we can provide URL as http://localhost:8888/api/v1/apidoc?version=<-version->
+
+To check API methods under specific version and namespace we can provide URL as http://localhost:8888/api/v1/apidoc?version=<-version->&namespace=<-namespace->
+
+```python
+>>> import json
+>>> from pprint import pprint
+
+>>> from kwikapi import API, MockRequest, BaseRequestHandler
+
+>>> class Calc(object):
+...    def add(self, a: int, b: int) -> int:
+...        return a + b
+
+>>> api = API()
+>>> api.register(Calc(), "v1", "calc")
+
+>>> req = MockRequest(url="/api/v1/apidoc")
+>>> res = json.loads(BaseRequestHandler(api).handle_request(req))
+
+>>> pprint(res['result'])
+{'namespace': {"('v1', 'calc')": {'add': {'doc': None,
+                                          'gives_stream': False,
+                                          'params': {'a': {'default': None,
+                                                           'required': True,
+                                                           'type': 'int'},
+                                                     'b': {'default': None,
+                                                           'required': True,
+                                                           'type': 'int'}},
+                                          'return_type': 'int'}}},
+ 'version': {'v1': {'add': {'doc': None,
+                            'gives_stream': False,
+                            'params': {'a': {'default': None,
+                                             'required': True,
+                                             'type': 'int'},
+                                       'b': {'default': None,
+                                             'required': True,
+                                             'type': 'int'}},
+                            'return_type': 'int'},
+                    'apidoc': {'doc': None,
+                               'gives_stream': False,
+                               'params': {'namespace': {'default': None,
+                                                        'required': False,
+                                                        'type': 'str'},
+                                          'version': {'default': None,
+                                                      'required': False,
+                                                      'type': 'str'}},
+                               'return_type': 'dict'}}}}
+>>> res['success']
+True
+
+>>> req = MockRequest(url="/api/v1/apidoc?version=v1&namespace=calc")
+>>> res = json.loads(BaseRequestHandler(api).handle_request(req))
+>>> pprint(res['result'])
+{'add': {'doc': None,
+         'gives_stream': False,
+         'params': {'a': {'default': None, 'required': True, 'type': 'int'},
+                    'b': {'default': None, 'required': True, 'type': 'int'}},
+         'return_type': 'int'}}
+>>> res['success']
+True
+
+```
+
 ### Bulk request handling
 It will be very convenient if the user has facility to make bulk requests.
 When making a large number of requests, the overhead of network latency and HTTP request/response processing
