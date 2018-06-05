@@ -6,7 +6,7 @@ from deeputil import Dummy, ExpiringCache
 
 from .protocols import PROTOCOLS
 from .exception import APICallFailed
-from .api import PROTOCOL_HEADER, NETPATH_HEADER
+from .api import PROTOCOL_HEADER, REQUEST_ID_HEADER
 from .utils import get_loggable_params
 
 DUMMY_LOG = Dummy()
@@ -36,15 +36,15 @@ class DNSCache:
             path = '{}?{}'.format(path, query)
 
         if port:
-            return '{}://{}:{}{}'.format(scheme, host, port, path)
+            return '{}://{}:{}{}'.format(scheme, _host, port, path)
         else:
-            return '{}://{}{}'.format(scheme, host, path)
+            return '{}://{}{}'.format(scheme, _host, path)
 
 class Client:
     DEFAULT_PROTOCOL = 'pickle'
 
     def __init__(self, url, version=None, protocol=DEFAULT_PROTOCOL,
-            path=None, netpath='', timeout=None, dnscache=None,
+            path=None, request='', timeout=None, dnscache=None,
             log=DUMMY_LOG):
 
         self._url = url
@@ -52,7 +52,7 @@ class Client:
         self._protocol = protocol # FIXME: check validity
 
         self._path = path or []
-        self._netpath = netpath
+        self._request = request
         self._timeout = timeout
         self._dnscache = dnscache
         self._log = log
@@ -63,7 +63,7 @@ class Client:
     def _get_state(self):
         return dict(url=self._url, version=self._version,
             protocol=self._protocol, path=self._path,
-            netpath=self._netpath, timeout=self._timeout,
+            request=self._request, timeout=self._timeout,
             dnscache=self._dnscache, log=self._log)
 
     def _copy(self, **kwargs):
@@ -74,7 +74,8 @@ class Client:
     def _prepare_request(self, post_body, get_params=None):
         headers = {}
         headers[PROTOCOL_HEADER] = self._protocol
-        headers[NETPATH_HEADER] = self._netpath
+        if self._request:
+            headers[REQUEST_ID_HEADER] = self.request.id
 
         upath = [self._version] + self._path
         upath = '/'.join(x for x in upath if x)

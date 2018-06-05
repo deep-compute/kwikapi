@@ -25,7 +25,8 @@ from .utils import get_loggable_params
 DUMMY_LOG = Dummy()
 
 PROTOCOL_HEADER = 'X-KwikAPI-Protocol'
-NETPATH_HEADER = 'X-KwikAPI-Netpath'
+REQUEST_ID_HEADER = 'X-KwikAPI-RequestID'
+TIMING_HEADER = 'X-KwikAPI-Timing'
 
 class Counter:
     def __init__(self, v=0):
@@ -50,7 +51,14 @@ class BaseRequest(object):
         self.fn_params = None
         self.response = None
         self.protocol = None
-        self.id = generate_random_string(length=5).decode('utf8')
+        self._id = generate_random_string(length=5).decode('utf8')
+
+    @property
+    def id(self):
+        _id = self.headers.get(REQUEST_ID_HEADER, '')
+        if _id:
+            return '{}.{}'.format(_id, self._id)
+        return _id
 
     @abc.abstractproperty
     def url(self):
@@ -174,13 +182,13 @@ class API(object):
 
     THREADPOOL_SIZE = 32
 
-    def __init__(self, default_version=None, id='',
+    def __init__(self, default_version=None, _id='',
             threadpool=None, threadpool_size=THREADPOOL_SIZE,
             log=DUMMY_LOG):
 
         self._api_funcs = {}
-        self.log = log.bind(api_id=id)
-        self.id = id
+        self.log = log.bind(api_id=_id)
+        self._id = _id
         self.default_version = default_version
 
         self.threadpool = None
@@ -189,8 +197,7 @@ class API(object):
             self.threadpool = threadpool
         else:
             if threadpool_size:
-                pass
-                #self.threadpool = concurrent.futures.ThreadPoolExecutor(max_workers=threadpool_size)
+                self.threadpool = concurrent.futures.ThreadPoolExecutor(max_workers=threadpool_size)
 
         self.register(ApiDoc(self._api_funcs), "v1")
 
@@ -378,15 +385,10 @@ class BaseRequestHandler(object):
         namespace = namespace if namespace else None
         r.namespace = namespace or ''
 
-        request.netpath = '{netpath}=>{id}_{reqid}({namespace}/{function})'.format(
-            netpath=request.headers.get(NETPATH_HEADER, ''),
-            id=self.api.id,
-            reqid=request.id,
-            namespace=r.namespace,
-            function=fn_name,
-        )
-
-        request.log = self.log.bind(__netpath=request.netpath)
+        request.log = self.log.bind(__requestid=request._id,
+                namespace=r.namespace,
+                function=fn_name,
+                apiid=self.api._id)
 
         query_string = urlp.query
 
@@ -445,7 +447,6 @@ class BaseRequestHandler(object):
         return self.PROTOCOLS[protocol]
 
     def handle_request(self, request):
-        #import pdb; pdb.set_trace()
         protocol = self._find_request_protocol(request)
         request.protocol = protocol.get_name()
         response = request.response
@@ -458,6 +459,8 @@ class BaseRequestHandler(object):
             tcompute = time.time()
             result = request.fn(**request.fn_params)
             tcompute = time.time() - tcompute
+
+            response.headers[TIMING_HEADER] = str(tcompute)
 
             # Serialize the response
             if request.fn.__func__.func_info['gives_stream']:
@@ -474,8 +477,9 @@ class BaseRequestHandler(object):
 
         except Exception as e:
             message = e.message if hasattr(e, 'message') else str(e)
-            message = '[(%s) %s: %s]' % (self.api.id, e.__class__.__name__, message)
+            message = '[(%s) %s: %s]' % (self.api._id, e.__class__.__name__, message)
 
+            _log = request.log if hasattr(request, 'log') else self.log
             self.log.exception('handle_request_error', message=message)
             response.write(dict(success=False, message=message), protocol)
 
