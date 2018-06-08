@@ -58,7 +58,7 @@ class BaseRequest(object):
         _id = self.headers.get(REQUEST_ID_HEADER, '')
         if _id:
             return '{}.{}'.format(_id, self._id)
-        return _id
+        return self._id
 
     @abc.abstractproperty
     def url(self):
@@ -182,13 +182,13 @@ class API(object):
 
     THREADPOOL_SIZE = 32
 
-    def __init__(self, default_version=None, _id='',
+    def __init__(self, default_version=None, id='',
             threadpool=None, threadpool_size=THREADPOOL_SIZE,
             log=DUMMY_LOG):
 
         self._api_funcs = {}
-        self.log = log.bind(api_id=_id)
-        self._id = _id
+        self.log = log.bind(api_id=id)
+        self._id = id
         self.default_version = default_version
 
         self.threadpool = None
@@ -480,7 +480,7 @@ class BaseRequestHandler(object):
             message = '[(%s) %s: %s]' % (self.api._id, e.__class__.__name__, message)
 
             _log = request.log if hasattr(request, 'log') else self.log
-            self.log.exception('handle_request_error', message=message)
+            _log.exception('handle_request_error', message=message)
             response.write(dict(success=False, message=message), protocol)
 
         response.flush()
