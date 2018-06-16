@@ -75,7 +75,7 @@ class Client:
         headers = {}
         headers[PROTOCOL_HEADER] = self._protocol
         if self._request:
-            headers[REQUEST_ID_HEADER] = self.request.id
+            headers[REQUEST_ID_HEADER] = self._request.id
 
         upath = [self._version] + self._path
         upath = '/'.join(x for x in upath if x)

@@ -385,7 +385,7 @@ class BaseRequestHandler(object):
         namespace = namespace if namespace else None
         r.namespace = namespace or ''
 
-        request.log = self.log.bind(__requestid=request._id,
+        request.log = self.log.bind(__requestid=request.id,
                 namespace=r.namespace,
                 function=fn_name,
                 apiid=self.api._id)
@@ -473,7 +473,7 @@ class BaseRequestHandler(object):
                     method=rinfo.method, compute_time=tcompute, serialize_time=t.value,
                     deserialize_time=rinfo.time_deserialize,
                     __params=get_loggable_params(request.fn_params or {}),
-                    protocol=request.protocol, type='metric')
+                    protocol=request.protocol, type='log')
 
         except Exception as e:
             message = e.message if hasattr(e, 'message') else str(e)
