@@ -27,6 +27,7 @@ DUMMY_LOG = Dummy()
 PROTOCOL_HEADER = 'X-KwikAPI-Protocol'
 REQUEST_ID_HEADER = 'X-KwikAPI-RequestID'
 TIMING_HEADER = 'X-KwikAPI-Timing'
+CLUSTER_HEADER = 'X-KwikAPI-Cluster'
 
 class Counter:
     def __init__(self, v=0):

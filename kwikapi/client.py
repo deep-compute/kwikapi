@@ -6,7 +6,7 @@ from deeputil import Dummy, ExpiringCache
 
 from .protocols import PROTOCOLS
 from .exception import APICallFailed
-from .api import PROTOCOL_HEADER, REQUEST_ID_HEADER
+from .api import PROTOCOL_HEADER, REQUEST_ID_HEADER, CLUSTER_HEADER
 from .utils import get_loggable_params
 
 DUMMY_LOG = Dummy()
@@ -43,11 +43,12 @@ class DNSCache:
 class Client:
     DEFAULT_PROTOCOL = 'pickle'
 
-    def __init__(self, url, version=None, protocol=DEFAULT_PROTOCOL,
+    def __init__(self, url, cluster=None, version=None, protocol=DEFAULT_PROTOCOL,
             path=None, request='', timeout=None, dnscache=None,
             log=DUMMY_LOG):
 
         self._url = url
+        self.cluster = cluster
         self._version = version
         self._protocol = protocol # FIXME: check validity
 
@@ -76,6 +77,8 @@ class Client:
         headers[PROTOCOL_HEADER] = self._protocol
         if self._request:
             headers[REQUEST_ID_HEADER] = self._request.id
+        if self.cluster:
+            headers[CLUSTER_HEADER] = repr(self.cluster)
 
         upath = [self._version] + self._path
         upath = '/'.join(x for x in upath if x)
