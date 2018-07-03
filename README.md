@@ -78,7 +78,7 @@ as living documentation and test cases, we use `MockRequest` so we don't need
 >>> api.register(Calc(), "v1") # `v1` is the version of this example
 
 >>> req = MockRequest(url="/api/v1/add?a=10&b=20")
->>> res = json.loads(BaseRequestHandler(api).handle_request(req))
+>>> res = json.loads(BaseRequestHandler(api).handle_request(req).decode('utf-8'))
 
 >>> res['result']
 30
@@ -120,14 +120,14 @@ We can register the same class with different versions (for testing here)
 >>> api.register(Calc(), "v2")
  
 >>> req = MockRequest(url="/api/v1/add?a=10&b=20")
->>> res = json.loads(BaseRequestHandler(api).handle_request(req))
+>>> res = json.loads(BaseRequestHandler(api).handle_request(req).decode('utf-8'))
 >>> res['result']
 30
 >>> res['success']
 True
 
 >>> req = MockRequest(url="/api/v2/add?a=10&b=20")
->>> res = json.loads(BaseRequestHandler(api).handle_request(req))
+>>> res = json.loads(BaseRequestHandler(api).handle_request(req).decode('utf-8'))
 >>> res['result']
 30
 >>> res['success']
@@ -155,14 +155,14 @@ We can register different classes with different versions
 >>> api.register(ConcStr(), "v2")
  
 >>> req = MockRequest(url="/api/v1/add?a=10&b=20")
->>> res = json.loads(BaseRequestHandler(api).handle_request(req))
+>>> res = json.loads(BaseRequestHandler(api).handle_request(req).decode('utf-8'))
 >>> res['result']
 30
 >>> res['success']
 True
 
 >>> req = MockRequest(url="/api/v2/add?a=in&b=dia")
->>> res = json.loads(BaseRequestHandler(api).handle_request(req))
+>>> res = json.loads(BaseRequestHandler(api).handle_request(req).decode('utf-8'))
 >>> res['result']
 'india'
 >>> res['success']
@@ -186,7 +186,7 @@ We can specify the default version so that when you don't mention version in the
 >>> api.register(Calc(), "v1")
 
 >>> req = MockRequest(url="/api/add?a=10&b=20")
->>> res = json.loads(BaseRequestHandler(api).handle_request(req))
+>>> res = json.loads(BaseRequestHandler(api).handle_request(req).decode('utf-8'))
 
 >>> res['result']
 30
@@ -300,14 +300,14 @@ Register methods with different namespaces
 >>> api.register(ConcStr(), "v1", "Calc/ConcStr")
  
 >>> req = MockRequest(url="/api/v1/Calc/add?a=10&b=20")
->>> res = json.loads(BaseRequestHandler(api).handle_request(req))
+>>> res = json.loads(BaseRequestHandler(api).handle_request(req).decode('utf-8'))
 >>> res['result']
 30
 >>> res['success']
 True
 
 >>> req = MockRequest(url="/api/v1/Calc/ConcStr/add?a=in&b=dia")
->>> res = json.loads(BaseRequestHandler(api).handle_request(req))
+>>> res = json.loads(BaseRequestHandler(api).handle_request(req).decode('utf-8'))
 >>> res['result']
 'india'
 >>> res['success']
@@ -334,7 +334,7 @@ Register same methods with same version with different namespaces
 >>> api.register(CalcScintific(), "v1", "scintific")
 
 >>> req = MockRequest(url="/api/v1/add?a=10&b=20")
->>> res = json.loads(BaseRequestHandler(api).handle_request(req))
+>>> res = json.loads(BaseRequestHandler(api).handle_request(req).decode('utf-8'))
 
 >>> res['result']
 30
@@ -342,7 +342,7 @@ Register same methods with same version with different namespaces
 True
 
 >>> req = MockRequest(url="/api/v1/scintific/add?a=10&b=20")
->>> res = json.loads(BaseRequestHandler(api).handle_request(req))
+>>> res = json.loads(BaseRequestHandler(api).handle_request(req).decode('utf-8'))
 
 >>> res['result']
 40
@@ -371,7 +371,7 @@ User can change the response if he wants it
 >>> api.register(Calc(), "v1")
 
 >>> req = MockRequest(url="/api/v1/add?a=10&b=20")
->>> res = json.loads(BaseRequestHandler(api).handle_request(req))
+>>> res = json.loads(BaseRequestHandler(api).handle_request(req).decode('utf-8'))
 
 >>> res['result']
 30
@@ -463,7 +463,7 @@ KwikAPI supports JSON, Messagepack, Pickle and Numpy protocols
 >>> base.register_protocol(CustomProtocol())
 
 >>> req = MockRequest(url="/api/v1/add?a=10&b=20")
->>> res = json.loads(base.handle_request(req))
+>>> res = json.loads(base.handle_request(req).decode('utf-8'))
 
 >>> res['result']
 30
@@ -530,7 +530,7 @@ To check API methods under specific version and namespace we can provide URL as 
 >>> api.register(Calc(), "v1", "calc")
 
 >>> req = MockRequest(url="/api/v1/apidoc")
->>> res = json.loads(BaseRequestHandler(api).handle_request(req))
+>>> res = json.loads(BaseRequestHandler(api).handle_request(req).decode('utf-8'))
 
 >>> pprint(res['result'])
 {'namespace': {"('v1', 'calc')": {'add': {'doc': None,
@@ -564,7 +564,7 @@ To check API methods under specific version and namespace we can provide URL as 
 True
 
 >>> req = MockRequest(url="/api/v1/apidoc?version=v1&namespace=calc")
->>> res = json.loads(BaseRequestHandler(api).handle_request(req))
+>>> res = json.loads(BaseRequestHandler(api).handle_request(req).decode('utf-8'))
 >>> pprint(res['result'])
 {'add': {'doc': None,
          'gives_stream': False,
