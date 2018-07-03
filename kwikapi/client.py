@@ -1,6 +1,7 @@
 import socket
 from urllib.parse import urljoin, urlparse, urlencode
 import urllib.request
+from requests.structures import CaseInsensitiveDict
 
 from deeputil import Dummy, ExpiringCache
 
@@ -45,7 +46,7 @@ class Client:
 
     def __init__(self, url, version=None, protocol=DEFAULT_PROTOCOL,
             path=None, request='', timeout=None, dnscache=None,
-            log=DUMMY_LOG):
+            headers=None, log=DUMMY_LOG):
 
         self._url = url
         self._version = version
@@ -55,6 +56,7 @@ class Client:
         self._request = request
         self._timeout = timeout
         self._dnscache = dnscache
+        self._headers = CaseInsensitiveDict(headers) if headers is not None else None
         self._log = log
 
         if not self._dnscache:
@@ -64,7 +66,8 @@ class Client:
         return dict(url=self._url, version=self._version,
             protocol=self._protocol, path=self._path,
             request=self._request, timeout=self._timeout,
-            dnscache=self._dnscache, log=self._log)
+            dnscache=self._dnscache, headers=self._headers,
+            log=self._log)
 
     def _copy(self, **kwargs):
         _kwargs = self._get_state()
@@ -72,10 +75,17 @@ class Client:
         return Client(**_kwargs)
 
     def _prepare_request(self, post_body, get_params=None):
-        headers = {}
-        headers[PROTOCOL_HEADER] = self._protocol
+        headers = (self._headers or CaseInsensitiveDict()).copy()
+
         if self._request:
+            for hk, hv in self._request.headers.items():
+                if not hk.lower().startswith('x-kwikapi-'):
+                    continue
+                headers[hk] = hv
+
             headers[REQUEST_ID_HEADER] = self._request.id
+
+        headers[PROTOCOL_HEADER] = self._protocol
 
         upath = [self._version] + self._path
         upath = '/'.join(x for x in upath if x)

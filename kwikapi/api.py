@@ -12,6 +12,7 @@ import typing
 import concurrent.futures
 
 from deeputil import Dummy, AttrDict, generate_random_string
+from requests.structures import CaseInsensitiveDict
 
 from .protocols import PROTOCOLS, DEFAULT_PROTOCOL
 from .apidoc import ApiDoc
@@ -126,7 +127,8 @@ class MockRequest(BaseRequest):
 
     def __init__(self, **kwargs):
         super().__init__()
-        self._request = dict(method='GET', body='', headers={})
+        self._request = dict(method='GET', body='',
+                headers=CaseInsensitiveDict())
         self._request.update(kwargs)
         self.response = MockResponse()
 
@@ -149,7 +151,7 @@ class MockRequest(BaseRequest):
 class MockResponse(BaseResponse):
     def __init__(self):
         super().__init__()
-        self.headers = {}
+        self.headers = CaseInsensitiveDict()
         self.raw_response = None
 
     def write(self, data, protocol, stream=False):
