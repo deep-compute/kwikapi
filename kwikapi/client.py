@@ -6,7 +6,7 @@ from deeputil import Dummy, ExpiringCache
 
 from .protocols import PROTOCOLS
 from .exception import APICallFailed
-from .api import PROTOCOL_HEADER, REQUEST_ID_HEADER, CLUSTER_HEADER
+from .api import PROTOCOL_HEADER, REQUEST_ID_HEADER
 from .utils import get_loggable_params
 
 DUMMY_LOG = Dummy()
@@ -43,12 +43,11 @@ class DNSCache:
 class Client:
     DEFAULT_PROTOCOL = 'pickle'
 
-    def __init__(self, url, cluster=None, version=None, protocol=DEFAULT_PROTOCOL,
+    def __init__(self, url, version=None, protocol=DEFAULT_PROTOCOL,
             path=None, request='', timeout=None, dnscache=None,
-            log=DUMMY_LOG):
+            headers=None, log=DUMMY_LOG):
 
         self._url = url
-        self.cluster = cluster
         self._version = version
         self._protocol = protocol # FIXME: check validity
 
@@ -56,6 +55,7 @@ class Client:
         self._request = request
         self._timeout = timeout
         self._dnscache = dnscache
+        self._headers = headers
         self._log = log
 
         if not self._dnscache:
@@ -65,7 +65,8 @@ class Client:
         return dict(url=self._url, version=self._version,
             protocol=self._protocol, path=self._path,
             request=self._request, timeout=self._timeout,
-            dnscache=self._dnscache, log=self._log)
+            dnscache=self._dnscache, headers=self._headers,
+            log=self._log)
 
     def _copy(self, **kwargs):
         _kwargs = self._get_state()
@@ -73,12 +74,17 @@ class Client:
         return Client(**_kwargs)
 
     def _prepare_request(self, post_body, get_params=None):
-        headers = {}
-        headers[PROTOCOL_HEADER] = self._protocol
+        headers = (self._headers or {}).copy()
+
         if self._request:
+            for hk, hv in self._request.headers.items():
+                if not hk.lower().startswith('x-kwikapi-'):
+                    continue
+                headers[hk] = hv
+
             headers[REQUEST_ID_HEADER] = self._request.id
-        if self.cluster:
-            headers[CLUSTER_HEADER] = repr(self.cluster)
+
+        headers[PROTOCOL_HEADER] = self._protocol
 
         upath = [self._version] + self._path
         upath = '/'.join(x for x in upath if x)
