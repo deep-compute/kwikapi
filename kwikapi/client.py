@@ -1,6 +1,7 @@
 import socket
 from urllib.parse import urljoin, urlparse, urlencode
 import urllib.request
+from requests.structures import CaseInsensitiveDict
 
 from deeputil import Dummy, ExpiringCache
 
@@ -55,7 +56,7 @@ class Client:
         self._request = request
         self._timeout = timeout
         self._dnscache = dnscache
-        self._headers = headers
+        self._headers = CaseInsensitiveDict(headers) if headers is not None else None
         self._log = log
 
         if not self._dnscache:
@@ -74,7 +75,7 @@ class Client:
         return Client(**_kwargs)
 
     def _prepare_request(self, post_body, get_params=None):
-        headers = (self._headers or {}).copy()
+        headers = (self._headers or CaseInsensitiveDict()).copy()
 
         if self._request:
             for hk, hv in self._request.headers.items():

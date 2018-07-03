@@ -22,8 +22,8 @@ setup(
     ],
     extras_require={
         'django': ['kwikapi-django==0.2.2'],
-        'tornado': ['kwikapi-tornado==0.2.5'],
-        'all': ['kwikapi-django==0.2.2', 'kwikapi-tornado==0.2.5']
+        'tornado': ['kwikapi-tornado==0.2.6'],
+        'all': ['kwikapi-django==0.2.2', 'kwikapi-tornado==0.2.6']
     },
     classifiers=[
         'Environment :: Web Environment',
