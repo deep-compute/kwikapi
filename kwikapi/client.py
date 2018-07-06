@@ -48,6 +48,8 @@ class Client:
             path=None, request='', timeout=None, dnscache=None,
             headers=None, log=DUMMY_LOG):
 
+        headers = headers or {}
+
         self._url = url
         self._version = version
         self._protocol = protocol # FIXME: check validity
@@ -56,7 +58,7 @@ class Client:
         self._request = request
         self._timeout = timeout
         self._dnscache = dnscache
-        self._headers = CaseInsensitiveDict(headers) if headers is not None else None
+        self._headers = CaseInsensitiveDict(headers)
         self._log = log
 
         if not self._dnscache:
@@ -75,7 +77,7 @@ class Client:
         return Client(**_kwargs)
 
     def _prepare_request(self, post_body, get_params=None):
-        headers = (self._headers or CaseInsensitiveDict()).copy()
+        headers = self._headers.copy()
 
         if self._request:
             for hk, hv in self._request.headers.items():

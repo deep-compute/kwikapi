@@ -52,6 +52,7 @@ class BaseRequest(object):
         self.fn_params = None
         self.response = None
         self.protocol = None
+        self.metrics = {}
         self._id = generate_random_string(length=5).decode('utf8')
 
     @property
@@ -475,7 +476,7 @@ class BaseRequestHandler(object):
                     method=rinfo.method, compute_time=tcompute, serialize_time=t.value,
                     deserialize_time=rinfo.time_deserialize,
                     __params=get_loggable_params(request.fn_params or {}),
-                    protocol=request.protocol, type='log')
+                    protocol=request.protocol, type='log', **request.metrics)
 
         except Exception as e:
             message = e.message if hasattr(e, 'message') else str(e)
