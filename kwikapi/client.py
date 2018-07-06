@@ -113,7 +113,10 @@ class Client:
     def _deserialize_response(data, protocol):
         proto = PROTOCOLS[protocol]
         r = proto.deserialize(data)
+        return Client._extract_response(r)
 
+    @staticmethod
+    def _extract_response(r):
         success = r['success']
         if not success:
             r = Exception(r['message']) # FIXME: raise proper exc
