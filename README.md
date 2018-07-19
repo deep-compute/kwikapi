@@ -604,6 +604,113 @@ print(c.namespace.add(a=10, b=10))
 print(c(version='v2', prtocol='pickle').namespace.add(a=10, b=10))
 ```
 
+### Authentication
+KwikAPI supports `Basic` and `Bearer` authentication.
+
+**Basic authentication:**
+
+Setting up authentication at server side
+
+```python
+import tornado.ioloop
+import tornado.web
+
+from kwikapi.tornado import RequestHandler
+from kwikapi import API, Request, BasicServerAuthenticator
+
+class Calc(object):
+    def add(self, req: Request, a: int, b: int) -> int:
+        if not req.auth.is_authenticated:
+            raise Exception("No auth") # Or your logic
+        return a + b
+
+user_store = dict(johndoe=dict(password='password'))
+auth = BasicServerAuthenticator(user_store=user_store)
+api = API(auth=auth)
+api.register(Calc(), 'v1')
+
+def make_app():
+    return tornado.web.Application([
+        (r'^/api/.*', RequestHandler, dict(api=api)),
+    ])  
+if __name__ == "__main__":
+    app = make_app()
+    app.listen(8818)
+    tornado.ioloop.IOLoop.current().start()
+```
+
+Using authentication at client side.
+```python
+from kwikapi import Client, BasicClientAuthenticator
+
+auth = BasicClientAuthenticator(username='johndoe', password='password')
+
+c = Client('http://localhost:8818/api/', version='v1', auth=auth, protocol='json')
+print(c.add(a=10, b=10))
+```
+
+**Bearer Authentication**
+
+Setting up authentication at server side
+
+```python
+import tornado.ioloop
+import tornado.web
+
+from kwikapi.tornado import RequestHandler
+from kwikapi import API, BearerServerAuthenticator, Request
+
+class Calc(object):
+    def add(self, req: Request, a: int, b: int) -> int:
+        if not req.auth.is_authenticated:
+            raise Exception("No auth")
+        return a + b
+
+tokstore = dict(
+    key1 = dict(user='blah'),
+    key2 = dict(user='blah1'),
+)
+auth = BearerServerAuthenticator(token_store=tokstore)
+
+api = API(auth=auth)
+api.register(Calc(), 'v1')
+
+def make_app():
+    return tornado.web.Application([
+        (r'^/api/.*', RequestHandler, dict(api=api)),
+    ])
+if __name__ == "__main__":
+    app = make_app()
+    app.listen(8818)
+    tornado.ioloop.IOLoop.current().start()
+```
+
+Using authentication at client side.
+```python
+from kwikapi import Client, BearerClientAuthenticator
+
+auth = BearerClientAuthenticator('key2')
+
+c = Client('http://localhost:8818/api/', version='v1', auth=auth, protocol='json')
+print(c.add(a=10, b=10))
+```
+
+If you don't want to use KwikAPI client then you have to pass the authentication deatails through headers.
+
+- Example for passing authentication details in Base Authentication.
+```python
+key = b'%s:%s' % (username, password)
+key = base64.b64encode(key)
+auth = b'Basic %s' % key
+headers['Authorization'] = auth
+```
+
+- Example for passing authentication details in Bearer Authentication.
+```python
+auth = b'Bearer %s' % b'key'
+headers['Authorization'] = auth
+```
+
 ## Run test cases
 ```bash
 $ python3 -m doctest -v README.md

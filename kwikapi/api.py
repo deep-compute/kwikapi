@@ -54,6 +54,7 @@ class BaseRequest(object):
         self.protocol = None
         self.metrics = {}
         self._id = generate_random_string(length=5).decode('utf8')
+        self.auth = None
 
     @property
     def id(self):
@@ -187,9 +188,10 @@ class API(object):
 
     def __init__(self, default_version=None, id='',
             threadpool=None, threadpool_size=THREADPOOL_SIZE,
-            log=DUMMY_LOG):
+            auth=None, log=DUMMY_LOG):
 
         self._api_funcs = {}
+        self._auth = auth
         self.log = log.bind(api_id=id)
         self._id = id
         self.default_version = default_version
@@ -450,6 +452,9 @@ class BaseRequestHandler(object):
         return self.PROTOCOLS[protocol]
 
     def handle_request(self, request):
+        if self.api._auth:
+            request.auth = self.api._auth.authenticate(request)
+
         protocol = self._find_request_protocol(request)
         request.protocol = protocol.get_name()
         response = request.response

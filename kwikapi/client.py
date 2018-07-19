@@ -46,7 +46,7 @@ class Client:
 
     def __init__(self, url, version=None, protocol=DEFAULT_PROTOCOL,
             path=None, request='', timeout=None, dnscache=None,
-            headers=None, log=DUMMY_LOG):
+            headers=None, auth=None, log=DUMMY_LOG):
 
         headers = headers or {}
 
@@ -59,6 +59,7 @@ class Client:
         self._timeout = timeout
         self._dnscache = dnscache
         self._headers = CaseInsensitiveDict(headers)
+        self._auth = auth
         self._log = log
 
         if not self._dnscache:
@@ -69,7 +70,7 @@ class Client:
             protocol=self._protocol, path=self._path,
             request=self._request, timeout=self._timeout,
             dnscache=self._dnscache, headers=self._headers,
-            log=self._log)
+            auth=self._auth, log=self._log)
 
     def _copy(self, **kwargs):
         _kwargs = self._get_state()
@@ -97,6 +98,9 @@ class Client:
             url = '{}?{}'.format(url, urlencode(get_params))
 
         url = self._dnscache.map_url(url)
+        if self._auth:
+            self._auth.sign(url, headers, post_body)
+
         return url, post_body, headers
 
     @staticmethod
