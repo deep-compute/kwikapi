@@ -624,7 +624,7 @@ class Calc(object):
             raise Exception("No auth") # Or your logic
         return a + b
 
-user_store = dict(username=dict(password='password'))
+user_store = dict(johndoe=dict(password='password'))
 auth = BasicServerAuthenticator(user_store=user_store)
 api = API(auth=auth)
 api.register(Calc(), 'v1')
@@ -643,7 +643,7 @@ Using authentication at client side.
 ```python
 from kwikapi import Client, BasicClientAuthenticator
 
-auth = BasicClientAuthenticator(username='username', password='password')
+auth = BasicClientAuthenticator(username='johndoe', password='password')
 
 c = Client('http://localhost:8818/api/', version='v1', auth=auth, protocol='json')
 print(c.add(a=10, b=10))
