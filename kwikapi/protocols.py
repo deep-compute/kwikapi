@@ -43,6 +43,7 @@ class JsonProtocol(BaseProtocol):
 
     @staticmethod
     def serialize(data):
+        data = to_python_type(data)
         data = json.dumps(data)
 
         return data.encode('utf-8')
