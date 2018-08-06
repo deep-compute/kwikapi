@@ -72,7 +72,7 @@ class MessagePackProtocol(BaseProtocol):
 
     @staticmethod
     def serialize(data):
-        return msgpack.packb(data, encoding="utf-8")
+        return msgpack.packb(data)
 
     @staticmethod
     def deserialize(data):
@@ -80,7 +80,7 @@ class MessagePackProtocol(BaseProtocol):
 
     @classmethod
     def deserialize_stream(cls, data):
-        unpacker = msgpack.Unpacker(data)
+        unpacker = msgpack.Unpacker(data, encoding="utf-8")
         for item in unpacker:
             yield item
 
