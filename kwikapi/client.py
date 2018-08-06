@@ -46,7 +46,7 @@ class Client:
 
     def __init__(self, url, version=None, protocol=DEFAULT_PROTOCOL,
             path=None, request='', timeout=None, dnscache=None,
-            headers=None, auth=None, log=DUMMY_LOG):
+            headers=None, auth=None, stream=False, log=DUMMY_LOG):
 
         headers = headers or {}
 
@@ -60,6 +60,7 @@ class Client:
         self._dnscache = dnscache
         self._headers = CaseInsensitiveDict(headers)
         self._auth = auth
+        self._stream = stream
         self._log = log
 
         if not self._dnscache:
@@ -70,7 +71,7 @@ class Client:
             protocol=self._protocol, path=self._path,
             request=self._request, timeout=self._timeout,
             dnscache=self._dnscache, headers=self._headers,
-            auth=self._auth, log=self._log)
+            auth=self._auth, stream=self._stream,log=self._log)
 
     def _copy(self, **kwargs):
         _kwargs = self._get_state()
@@ -103,17 +104,17 @@ class Client:
 
         return url, post_body, headers
 
-    @staticmethod
-    def _make_request(url, post_body, headers):
+    def _make_request(self, url, post_body, headers):
         req = urllib.request.Request(url, data=post_body, headers=headers)
         res = urllib.request.urlopen(req)
 
-        # FIXME: catch exceptions raised and
-        # also check the response code
-        #if res.status_code != requests.codes.ok:
-        #    raise APICallFailed(res.status_code)
+        if self._stream:
+            proto = PROTOCOLS[self._protocol]
+            res = proto.deserialize_stream(res)
+        else:
+            res = self._deserialize_response(res.read(), self._protocol)
 
-        return res.read()
+        return res
 
     @staticmethod
     def _deserialize_response(data, protocol):
@@ -150,7 +151,6 @@ class Client:
             post_body = self._serialize_params(kwargs, self._protocol)
             url, post_body, headers = self._prepare_request(post_body)
             res = self._make_request(url, post_body, headers)
-            res = self._deserialize_response(res, self._protocol)
 
             if isinstance(res, Exception):
                 raise res

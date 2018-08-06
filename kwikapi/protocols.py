@@ -6,7 +6,7 @@ import msgpack
 import numpy as np
 
 from .exception import StreamingNotSupported
-from .utils import walk_data_structure, to_python_type, liteval
+from .utils import walk_data_structure, liteval
 
 class BaseProtocol(object):
     __metaclass__ = abc.ABCMeta
@@ -43,7 +43,6 @@ class JsonProtocol(BaseProtocol):
 
     @staticmethod
     def serialize(data):
-        data = to_python_type(data)
         data = json.dumps(data)
 
         return data.encode('utf-8')
@@ -73,7 +72,7 @@ class MessagePackProtocol(BaseProtocol):
 
     @staticmethod
     def serialize(data):
-        return msgpack.packb(data)
+        return msgpack.packb(data, encoding="utf-8")
 
     @staticmethod
     def deserialize(data):

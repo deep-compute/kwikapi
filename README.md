@@ -98,6 +98,7 @@ True
 - API Doc
 - Bulk request handling
 - KwikAPI Client
+- Authentication
 
 ### Versioning support
 Versioning support will be used if user wants different versions of functionality with slightly changed behaviour.
@@ -601,7 +602,17 @@ print(c.namespace.add(a=10, b=10))
 
 # Parameters can be changed that are passed to the Client object
 
-print(c(version='v2', prtocol='pickle').namespace.add(a=10, b=10))
+print(c(version='v2', protocol='pickle').namespace.add(a=10, b=10))
+```
+
+Streaming response is handled by passing the parameter `stream` as True.
+```python
+c = Client('http://localhost:8818/api/', version='v1')
+res = c(stream=True).add(a=10, b=10)
+
+# You will get generator object on stream True
+for r in res:
+    print(r)
 ```
 
 ### Authentication
