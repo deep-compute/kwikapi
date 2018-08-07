@@ -481,14 +481,15 @@ class BaseRequestHandler(object):
                     method=rinfo.method, compute_time=tcompute, serialize_time=t.value,
                     deserialize_time=rinfo.time_deserialize,
                     __params=get_loggable_params(request.fn_params or {}),
-                    protocol=request.protocol, type='log', **request.metrics)
+                    protocol=request.protocol, type='logged_metric', **request.metrics)
 
         except Exception as e:
             message = e.message if hasattr(e, 'message') else str(e)
             message = '[(%s) %s: %s]' % (self.api._id, e.__class__.__name__, message)
 
             _log = request.log if hasattr(request, 'log') else self.log
-            _log.exception('handle_request_error', message=message)
+            _log.exception('handle_request_error', message=message,
+                    __params=get_loggable_params(request.fn_params or {}))
             response.write(dict(success=False, message=message), protocol)
 
         response.flush()
