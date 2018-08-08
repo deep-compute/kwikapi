@@ -240,11 +240,13 @@ class API(object):
         except KeyError:
             _return_type = 'None'
 
+        stream = True if _return_type == typing.Generator else False
+
         info = dict(
             doc=fn.__doc__,
             params=params,
             return_type=_return_type,
-            gives_stream=inspect.isgeneratorfunction(fn)
+            gives_stream=stream
         )
 
         if N_PREFIX_ARGS == 2:

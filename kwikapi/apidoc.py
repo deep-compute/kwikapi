@@ -11,9 +11,6 @@ class ApiDoc(object):
         if t is None:
             return str(None)
 
-        if isinstance(t, typing.TypingMeta):
-            return str(t)
-
         return t.__name__
 
     def apidoc(self, version: str=None, namespace: str=None) -> dict:
