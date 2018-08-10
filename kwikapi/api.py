@@ -483,7 +483,8 @@ class BaseRequestHandler(object):
                     method=rinfo.method, compute_time=tcompute, serialize_time=t.value,
                     deserialize_time=rinfo.time_deserialize,
                     __params=get_loggable_params(request.fn_params or {}),
-                    protocol=request.protocol, type='logged_metric', **request.metrics)
+                    protocol=request.protocol, type='logged_metric', num_req=1,
+                    **request.metrics)
 
         except Exception as e:
             message = e.message if hasattr(e, 'message') else str(e)
