@@ -1,6 +1,6 @@
 from setuptools import setup, find_packages
 
-version = '0.4.3'
+version = '0.4.4'
 setup(
     name="kwikapi",
     version=version,
@@ -16,7 +16,7 @@ setup(
     install_requires=[
     'msgpack-python==0.5.1',
     'deeputil==0.2.5',
-    'numpy==1.14.2',
+    'numpy==1.15.1',
     'future==0.16.0',
     'requests==2.18.4',
     ],
