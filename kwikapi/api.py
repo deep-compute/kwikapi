@@ -97,7 +97,6 @@ class BaseResponse(object):
             self._data = protocol.serialize(data)
             return C(len(self._data)), C(time.time() - t)
 
-
         n = C(0)
         t = C(0.0)
 
@@ -453,6 +452,24 @@ class BaseRequestHandler(object):
         protocol = request.headers.get(PROTOCOL_HEADER, self.default_protocol)
         return self.PROTOCOLS[protocol]
 
+    def _handle_exception(self, req, e):
+        message = e.message if hasattr(e, 'message') else str(e)
+        message = '[(%s) %s: %s]' % (self.api._id, e.__class__.__name__, message)
+
+        _log = req.log if hasattr(req, 'log') else self.log
+        _log.exception('handle_request_error', message=message,
+                        __params=get_loggable_params(req.fn_params or {}))
+
+        return message
+
+    def _wrap_stream(self, req, res):
+        try:
+            for r in res:
+                yield dict(success=True, result=r)
+        except Exception as e:
+            m = self._handle_exception(req, e)
+            yield dict(success=False, message=m)
+
     def handle_request(self, request):
         if self.api._auth:
             request.auth = self.api._auth.authenticate(request)
@@ -474,6 +491,7 @@ class BaseRequestHandler(object):
 
             # Serialize the response
             if request.fn.__func__.func_info['gives_stream']:
+                result = self._wrap_stream(request, result)
                 n, t = response.write(result, protocol, stream=True)
             else:
                 n, t = response.write(dict(success=True, result=result), protocol)
@@ -487,13 +505,8 @@ class BaseRequestHandler(object):
                     **request.metrics)
 
         except Exception as e:
-            message = e.message if hasattr(e, 'message') else str(e)
-            message = '[(%s) %s: %s]' % (self.api._id, e.__class__.__name__, message)
-
-            _log = request.log if hasattr(request, 'log') else self.log
-            _log.exception('handle_request_error', message=message,
-                    __params=get_loggable_params(request.fn_params or {}))
-            response.write(dict(success=False, message=message), protocol)
+            m = self._handle_exception(request, e)
+            response.write(dict(success=False, message=m), protocol)
 
         response.flush()
         response.close()

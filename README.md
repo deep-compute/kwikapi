@@ -90,7 +90,7 @@ True
 ## Features
 
 - Versioning support
-- Type checking
+- Type annotations
 - Namespace
 - Customizing request and response
 - Streaming
@@ -171,7 +171,7 @@ True
  
  ```
 
-We can specify the default version so that when you don't mention version in the request URL then default version will be used.
+We can specify the default version so that when you don't mention version in the request URL then the default version will be used.
 
 ```python
 >>> import json
@@ -196,7 +196,7 @@ True
  
 ```
  
-### Type checking
+### Type annotations
 Specifying type for parameters and for return value will exactly meet the functionality. This is mandatory in KwikAPI (If the method don't return anything then `None` should be specified as return type)
 
 ```python
@@ -271,7 +271,7 @@ Here are some examples of how to use type hints.
 
 ```
 
-- If we don't need to bother about type checking then we can simply use Any from typing
+- If we don't need to bother about type annotations then we can simply use Any from typing
 ```python
 >>> from typing import Any
 >>> class Calc(object):
@@ -509,7 +509,7 @@ $ wget "http://localhost:8888/api/v1/add" --header="X-KwikAPI-Protocol: numpy" -
 ```
 
 ### API Doc
-Using API Doc we can look at what are the all API methods available
+Using the API Doc we can look at what are the all API methods available
 
 To see available API methods the URL will be http://localhost:8888/api/v1/apidoc for default version
 
@@ -585,7 +585,7 @@ bulk.
 
 ### KwikAPI Client
 `KwikAPI` provides client tool which will help in making calls to server. The `KwikAPI Client` will take
-care of serialization and deserialization of the data.
+care of the serialization and the deserialization of the data.
 
 Usage:
 ```python

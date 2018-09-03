@@ -111,6 +111,7 @@ class Client:
         if self._stream:
             proto = PROTOCOLS[self._protocol]
             res = proto.deserialize_stream(res)
+            res = Client._extract_stream_response(res)
         else:
             res = self._deserialize_response(res.read(), self._protocol)
 
@@ -126,11 +127,16 @@ class Client:
     def _extract_response(r):
         success = r['success']
         if not success:
-            r = Exception(r['message']) # FIXME: raise proper exc
+            raise Exception(r['message']) # FIXME: raise proper exc
         else:
             r = r['result']
 
         return r
+
+    @staticmethod
+    def _extract_stream_response(res):
+        for r in res:
+            yield Client._extract_response(r)
 
     @staticmethod
     def _serialize_params(params, protocol):
@@ -144,6 +150,7 @@ class Client:
         if self._path:
             # FIXME: support streaming in both directions
             _kwargs = get_loggable_params(kwargs or {})
+
             self._log.debug('kwikapi.client.__call__',
                     path=self._path, kwargs=_kwargs,
                     url=self._url, version=self._version, protocol=self._protocol)
@@ -152,10 +159,8 @@ class Client:
             url, post_body, headers = self._prepare_request(post_body)
             res = self._make_request(url, post_body, headers)
 
-            if isinstance(res, Exception):
-                raise res
-            else:
-                return res
+            return res
+
         else:
             return self._copy(**kwargs)
 
