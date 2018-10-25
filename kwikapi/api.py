@@ -413,6 +413,8 @@ class BaseRequestHandler(object):
 
         for key, val in param_vals.items():
             try:
+                if params.get(key, {}).get('type', "") == type(val):
+                    continue
                 param_vals[key] = ast.literal_eval(val)
             except: # FIXME: bald except!
                 param_vals[key] = val
