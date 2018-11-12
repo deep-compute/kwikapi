@@ -53,7 +53,7 @@ class BaseRequest(object):
         self.response = None
         self.protocol = None
         self.metrics = {}
-        self._id = generate_random_string(length=5).decode('utf8')
+        self._id = generate_random_string(length=5)
         self.auth = None
 
     @property

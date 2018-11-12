@@ -1,6 +1,6 @@
 from setuptools import setup, find_packages
 
-version = '0.4.5'
+version = '0.4.6'
 setup(
     name="kwikapi",
     version=version,
@@ -15,15 +15,15 @@ setup(
     author_email='contact@deepcompute.com',
     install_requires=[
     'msgpack-python==0.5.1',
-    'deeputil==0.2.5',
+    'deeputil==0.2.7',
     'numpy==1.15.1',
     'future==0.16.0',
     'requests==2.18.4',
     ],
     extras_require={
         'django': ['kwikapi-django==0.2.5'],
-        'tornado': ['kwikapi-tornado==0.3.1'],
-        'all': ['kwikapi-django==0.2.5', 'kwikapi-tornado==0.3.1']
+        'tornado': ['kwikapi-tornado==0.3.3'],
+        'all': ['kwikapi-django==0.2.5', 'kwikapi-tornado==0.3.3']
     },
     classifiers=[
         'Environment :: Web Environment',
