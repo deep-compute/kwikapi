@@ -455,8 +455,13 @@ class BaseRequestHandler(object):
         return self.PROTOCOLS[protocol]
 
     def _handle_exception(self, req, e):
-        message = e.message if hasattr(e, 'message') else str(e)
-        message = '[(%s) %s: %s]' % (self.api._id, e.__class__.__name__, message)
+        if len(e.args) == 1 and type(e.args[0]) is dict:
+            message = e.args[0]
+            message['error'] = '[(%s) %s]' % (self.api._id, e.__class__.__name__)
+        else:
+            message = e.message if hasattr(e, 'message') else str(e)
+            m = '[(%s) %s: %s]' % (self.api._id, e.__class__.__name__, message)
+            message = dict(message=m)
 
         _log = req.log if hasattr(req, 'log') else self.log
         _log.exception('handle_request_error', message=message,
@@ -470,7 +475,8 @@ class BaseRequestHandler(object):
                 yield dict(success=True, result=r)
         except Exception as e:
             m = self._handle_exception(req, e)
-            yield dict(success=False, message=m)
+            m['success'] = False
+            yield m
 
     def handle_request(self, request):
         if self.api._auth:
@@ -508,7 +514,8 @@ class BaseRequestHandler(object):
 
         except Exception as e:
             m = self._handle_exception(request, e)
-            response.write(dict(success=False, message=m), protocol)
+            m['success'] = False
+            response.write(m, protocol)
 
         response.flush()
         response.close()
