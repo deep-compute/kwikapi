@@ -5,6 +5,7 @@ import base64
 from deeputil import xcode, AttrDict
 
 from .api import Request
+from .exception import AuthenticationError
 
 class BaseServerAuthenticator:
     '''Helps in authenticating a request on the server'''
@@ -16,7 +17,7 @@ class BaseServerAuthenticator:
         auth = req.headers.get('Authorization')
         _type, info = auth.split(' ', 1)
         if _type.lower() != self.TYPE:
-            raise Exception('Invalid auth type: %s' % _type) # FIXME: raise exc hierarchy
+            raise AuthenticationError(_type)
 
         auth = AuthInfo(type=self.TYPE)
         auth.header_info = info

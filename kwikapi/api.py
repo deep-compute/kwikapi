@@ -20,6 +20,7 @@ from .apidoc import ApiDoc
 from .exception import DuplicateAPIFunction, UnknownAPIFunction
 from .exception import ProtocolAlreadyExists, UnknownProtocol
 from .exception import UnsupportedType, TypeNotSpecified
+from .exception import KeywordArgumentError
 
 from .utils import get_loggable_params
 
@@ -343,6 +344,7 @@ class API(object):
 class BaseRequestHandler(object):
     PROTOCOLS = PROTOCOLS
     DEFAULT_PROTOCOL = DEFAULT_PROTOCOL
+    DEFAULT_ERROR_CODE = 50000
 
     def __init__(self, api,
             default_version=None, default_protocol=DEFAULT_PROTOCOL,
@@ -455,8 +457,11 @@ class BaseRequestHandler(object):
         return self.PROTOCOLS[protocol]
 
     def _handle_exception(self, req, e):
-        message = e.message if hasattr(e, 'message') else str(e)
-        message = '[(%s) %s: %s]' % (self.api._id, e.__class__.__name__, message)
+        message_value = e.message if hasattr(e, 'message') else str(e)
+        code_value = e.code if hasattr(e, 'code') else self.DEFAULT_ERROR_CODE
+        error_value = '[(%s) %s]' % (self.api._id, e.__class__.__name__)
+        success_value = False
+        message = dict(message=message_value, code=code_value, error=error_value, success=success_value)
 
         _log = req.log if hasattr(req, 'log') else self.log
         _log.exception('handle_request_error', message=message,
@@ -470,7 +475,7 @@ class BaseRequestHandler(object):
                 yield dict(success=True, result=r)
         except Exception as e:
             m = self._handle_exception(req, e)
-            yield dict(success=False, message=m)
+            yield m
 
     def handle_request(self, request):
         if self.api._auth:
@@ -486,7 +491,14 @@ class BaseRequestHandler(object):
 
             # invoke the API function
             tcompute = time.time()
-            result = request.fn(**request.fn_params)
+            try:
+                result = request.fn(**request.fn_params)
+            except TypeError as e:
+                if 'got an unexpected keyword argument' in str(e):
+                    raise KeywordArgumentError(e.args[0])
+                else:
+                    raise e
+
             tcompute = time.time() - tcompute
 
             response.headers[TIMING_HEADER] = str(tcompute)
@@ -508,7 +520,7 @@ class BaseRequestHandler(object):
 
         except Exception as e:
             m = self._handle_exception(request, e)
-            response.write(dict(success=False, message=m), protocol)
+            response.write(m, protocol)
 
         response.flush()
         response.close()

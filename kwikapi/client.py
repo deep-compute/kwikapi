@@ -6,7 +6,7 @@ from requests.structures import CaseInsensitiveDict
 from deeputil import Dummy, ExpiringCache
 
 from .protocols import PROTOCOLS
-from .exception import APICallFailed
+from .exception import NonKeywordArgumentsError
 from .api import PROTOCOL_HEADER, REQUEST_ID_HEADER
 from .utils import get_loggable_params
 
@@ -47,7 +47,6 @@ class Client:
     def __init__(self, url, version=None, protocol=DEFAULT_PROTOCOL,
             path=None, request='', timeout=None, dnscache=None,
             headers=None, auth=None, stream=False, log=DUMMY_LOG):
-
         headers = headers or {}
 
         self._url = url
@@ -127,7 +126,8 @@ class Client:
     def _extract_response(r):
         success = r['success']
         if not success:
-            raise Exception(r['message']) # FIXME: raise proper exc
+            r.pop('success')
+            raise Exception(r) # FIXME: raise proper exc
         else:
             r = r['result']
 
@@ -145,7 +145,8 @@ class Client:
         return data
 
     def __call__(self, *args, **kwargs):
-        assert(not args) # FIXME: raise appropriate exception
+        if args:
+            raise NonKeywordArgumentsError(args)
 
         if self._path:
             # FIXME: support streaming in both directions
