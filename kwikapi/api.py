@@ -474,8 +474,7 @@ class BaseRequestHandler(object):
             for r in res:
                 yield dict(success=True, result=r)
         except Exception as e:
-            m = self._handle_exception(req, e)
-            yield m
+            yield self._handle_exception(req, e)
 
     def handle_request(self, request):
         if self.api._auth:
