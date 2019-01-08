@@ -16,8 +16,8 @@ deploy:
     - LICENSE
     - kwikapi/api.py
     - kwikapi/__init__.py
-  name: kwikapi-0.4.7
-  tag_name: 0.4.7
+  name: kwikapi-0.4.8
+  tag_name: 0.4.8
   on:
     repo: deep-compute/kwikapi
 - provider: pypi
