@@ -118,6 +118,31 @@ class PickleProtocol(BaseProtocol):
     def get_mime_type():
         return 'application/pickle'
 
+class RawProtocol(BaseProtocol):
+    @staticmethod
+    def get_name():
+        return 'raw'
+
+    @staticmethod
+    def serialize(data):
+        return data
+
+    @staticmethod
+    def deserialize(data):
+        return data
+
+    @classmethod
+    def deserialize_stream(cls, data):
+        return data
+
+    @classmethod
+    def get_record_separator(cls):
+        return b''
+
+    @staticmethod
+    def get_mime_type():
+        return 'application/octet-stream'
+
 class NumpyProtocol(BaseProtocol):
 
     @staticmethod
@@ -180,6 +205,7 @@ PROTOCOLS = dict((p.get_name(), p) for p in [
     MessagePackProtocol,
     PickleProtocol,
     NumpyProtocol,
+    RawProtocol,
 ])
 
 DEFAULT_PROTOCOL = JsonProtocol.get_name()
