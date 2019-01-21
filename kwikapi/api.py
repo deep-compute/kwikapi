@@ -493,10 +493,11 @@ class BaseRequestHandler(object):
 
             # Serialize the response
             if request.fn.__func__.func_info['gives_stream']:
-                result = self._wrap_stream(request, result)
+                result = self._wrap_stream(request, result) if protocol.should_wrap() else result
                 n, t = response.write(result, protocol, stream=True)
             else:
-                n, t = response.write(dict(success=True, result=result), protocol)
+                result = dict(success=True, result=result) if protocol.should_wrap() else result
+                n, t = response.write(result, protocol)
 
             request.log.info('kwikapi.handle_request',
                     function=rinfo.function, namespace=rinfo.namespace,

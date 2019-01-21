@@ -35,6 +35,14 @@ class BaseProtocol(object):
     def get_mime_type(self):
         pass
 
+    @staticmethod
+    def should_wrap():
+        '''
+        FIXME: add description here with examples
+        to show why this is required
+        '''
+        return True
+
 class JsonProtocol(BaseProtocol):
 
     @staticmethod
@@ -142,6 +150,10 @@ class RawProtocol(BaseProtocol):
     @staticmethod
     def get_mime_type():
         return 'application/octet-stream'
+
+    @classmethod
+    def should_wrap(cls):
+        return False
 
 class NumpyProtocol(BaseProtocol):
 
