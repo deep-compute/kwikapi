@@ -38,8 +38,12 @@ class BaseProtocol(object):
     @staticmethod
     def should_wrap():
         '''
-        FIXME: add description here with examples
-        to show why this is required
+        While returning the response the,
+        kwikapi will wrap the response as -
+        {success: value, result: value}
+
+        This is applicable to all the protocols,
+        except the raw protocol
         '''
         return True
 
