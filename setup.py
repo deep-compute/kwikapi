@@ -1,6 +1,6 @@
 from setuptools import setup, find_packages
 
-version = '0.4.7'
+version = '0.4.9'
 setup(
     name="kwikapi",
     version=version,

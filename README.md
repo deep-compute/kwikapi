@@ -99,6 +99,7 @@ True
 - Bulk request handling
 - KwikAPI Client
 - Authentication
+- Custom error codes and messages
 
 ### Versioning support
 Versioning support will be used if user wants different versions of functionality with slightly changed behaviour.
@@ -643,7 +644,7 @@ api.register(Calc(), 'v1')
 def make_app():
     return tornado.web.Application([
         (r'^/api/.*', RequestHandler, dict(api=api)),
-    ])  
+    ])
 if __name__ == "__main__":
     app = make_app()
     app.listen(8818)
@@ -722,6 +723,95 @@ auth = b'Bearer %s' % b'key'
 headers['Authorization'] = auth
 ```
 
+### Custom error codes and messages
+KwikAPI supports error `codes` and `messages`.
+
+A global map of error messages and error codes are maintained across the KwikAPI. Every error code specifies a unique error message that is possible.
+
+**KwikAPI's default error code:**
+
+| Error | Code |
+| ---- | ---- |
+| Unknown / Internal Exception | 50000 |
+| Duplicate API function | 50001 |
+| Unknown API function | 50002 |
+| Protocol already exists | 50003 |
+| Unknown protocol | 50004 |
+| Unknown version | 50005 |
+| Unsupported type | 50006 |
+| Type not specified | 50007 |
+| Unknown version or namespace | 50008 |
+| Streaming not supported | 50009 |
+| Keyword argument error | 50010 |
+| Authentication error | 50011 |
+| Non-keyword arguments error | 50012 |
+
+Exceptions raised by API's return default error if not handled which is `50000` by default.
+
+#### Examples
+- Response with an error code and message:
+    > URL:`https://www.example.com/addd?a=10&b=20`
+
+    ```json
+     {
+       "message": "Unknown API Function: \"addd\"",
+       "code": 50002,
+       "error": "[(www.example.com) UnknownAPIFunction]",
+       "success": false
+     }
+    ```
+
+    To return custom error messages and code, developer must raise an exception object with attributes `message` and `code` in it.
+
+- Raising custom error message and error code
+    ```python
+    import tornado.web
+    import tornado.ioloop
+
+    from kwikapi import API
+    from kwikapi.tornado import RequestHandler
+
+    # custom exception
+    class CalcError(Exception):
+        def __init__(self, message="Input error", code=1101):
+            self.message = message
+            self.code = code
+
+    # Core logic that you want to expose as a service
+    class Calc(object):
+        def divide(self, a: int, b: int) -> int:
+            try:
+                return a / b
+            except:
+                raise CalcError(message="b can't be zero")
+
+    # Register BaseCalc with KwikAPI
+    api = API()
+    api.register(Calc(), 'v1')
+
+    # Passing RequestHandler to the KwikAPI
+    def make_app():
+        return tornado.web.Application([
+            (r'^/api/.*', RequestHandler, dict(api=api)),
+        ])
+
+    # Starting the application
+    if __name__ == "__main__":
+        app = make_app()
+        app.listen(8888)
+        tornado.ioloop.IOLoop.current().start()
+    ```
+    Response:
+    > URL:`https://www.example.com/divide?a=10&b=0`
+
+    ```json
+    {
+       "success": false,
+       "message": "b can't be zero",
+       "code": 1101,
+       "error": "[(www.example.com) CalcError]"
+    }
+    ```
 ## Run test cases
 ```bash
 $ python3 -m doctest -v README.md
