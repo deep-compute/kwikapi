@@ -42,8 +42,9 @@ class BaseProtocol(object):
         kwikapi will wrap the response as -
         {success: value, result: value}
 
-        This is applicable to all the protocols,
-        except the raw protocol
+        This method, can used in above situation,
+        if no wrapping is required,
+        override this method in the protocol class.
         '''
         return True
 
