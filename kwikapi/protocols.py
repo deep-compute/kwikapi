@@ -35,6 +35,19 @@ class BaseProtocol(object):
     def get_mime_type(self):
         pass
 
+    @staticmethod
+    def should_wrap():
+        '''
+        While returning the response the,
+        kwikapi will wrap the response as -
+        {success: value, result: value}
+
+        This method, can used in above situation,
+        if no wrapping is required,
+        override this method in the protocol class.
+        '''
+        return True
+
 class JsonProtocol(BaseProtocol):
 
     @staticmethod
@@ -118,6 +131,35 @@ class PickleProtocol(BaseProtocol):
     def get_mime_type():
         return 'application/pickle'
 
+class RawProtocol(BaseProtocol):
+    @staticmethod
+    def get_name():
+        return 'raw'
+
+    @staticmethod
+    def serialize(data):
+        return data
+
+    @staticmethod
+    def deserialize(data):
+        return data
+
+    @classmethod
+    def deserialize_stream(cls, data):
+        return data
+
+    @classmethod
+    def get_record_separator(cls):
+        return b''
+
+    @staticmethod
+    def get_mime_type():
+        return 'application/octet-stream'
+
+    @classmethod
+    def should_wrap(cls):
+        return False
+
 class NumpyProtocol(BaseProtocol):
 
     @staticmethod
@@ -180,6 +222,7 @@ PROTOCOLS = dict((p.get_name(), p) for p in [
     MessagePackProtocol,
     PickleProtocol,
     NumpyProtocol,
+    RawProtocol,
 ])
 
 DEFAULT_PROTOCOL = JsonProtocol.get_name()
