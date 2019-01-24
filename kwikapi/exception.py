@@ -1,6 +1,11 @@
 # -*- coding: utf-8 -*
 import abc
 
+
+class ResponseError(Exception):
+    pass
+
+
 class BaseException(Exception):
     __metaclass__ = abc.ABCMeta
 

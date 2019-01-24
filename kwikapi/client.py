@@ -6,7 +6,7 @@ from requests.structures import CaseInsensitiveDict
 from deeputil import Dummy, ExpiringCache
 
 from .protocols import PROTOCOLS
-from .exception import NonKeywordArgumentsError
+from .exception import NonKeywordArgumentsError, ResponseError
 from .api import PROTOCOL_HEADER, REQUEST_ID_HEADER
 from .utils import get_loggable_params
 
@@ -46,7 +46,9 @@ class Client:
 
     def __init__(self, url, version=None, protocol=DEFAULT_PROTOCOL,
             path=None, request='', timeout=None, dnscache=None,
-            headers=None, auth=None, stream=False, log=DUMMY_LOG):
+            headers=None, auth=None, stream=False, log=DUMMY_LOG,
+            raise_exception=True):
+
         headers = headers or {}
 
         self._url = url
@@ -61,6 +63,7 @@ class Client:
         self._auth = auth
         self._stream = stream
         self._log = log
+        self._raise_exception = raise_exception
 
         if not self._dnscache:
             self._dnscache = DNSCache()
@@ -70,7 +73,8 @@ class Client:
             protocol=self._protocol, path=self._path,
             request=self._request, timeout=self._timeout,
             dnscache=self._dnscache, headers=self._headers,
-            auth=self._auth, stream=self._stream,log=self._log)
+            auth=self._auth, stream=self._stream,log=self._log,
+            raise_exception=self._raise_exception)
 
     def _copy(self, **kwargs):
         _kwargs = self._get_state()
@@ -110,33 +114,36 @@ class Client:
         if self._stream:
             proto = PROTOCOLS[self._protocol]
             res = proto.deserialize_stream(res)
-            res = Client._extract_stream_response(res)
+            res = Client._extract_stream_response(res, self._raise_exception)
         else:
-            res = self._deserialize_response(res.read(), self._protocol)
+            res = self._deserialize_response(res.read(), self._protocol,
+                    self._raise_exception)
 
         return res
 
     @staticmethod
-    def _deserialize_response(data, protocol):
+    def _deserialize_response(data, protocol, raise_exception=True):
         proto = PROTOCOLS[protocol]
         r = proto.deserialize(data)
-        return Client._extract_response(r)
+        return Client._extract_response(r, raise_exception)
 
     @staticmethod
-    def _extract_response(r):
+    def _extract_response(r, raise_exception=True):
         success = r['success']
         if not success:
             r.pop('success')
-            raise Exception(r) # FIXME: raise proper exc
+            r = ResponseError(r)
+            if raise_exception:
+                raise r
         else:
             r = r['result']
 
         return r
 
     @staticmethod
-    def _extract_stream_response(res):
+    def _extract_stream_response(res, raise_exception=True):
         for r in res:
-            yield Client._extract_response(r)
+            yield Client._extract_response(r, raise_exception)
 
     @staticmethod
     def _serialize_params(params, protocol):

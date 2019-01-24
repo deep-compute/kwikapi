@@ -493,7 +493,7 @@ class BaseRequestHandler(object):
             try:
                 result = request.fn(**request.fn_params)
             except TypeError as e:
-                if 'got an unexpected keyword argument' in str(e):
+                if 'got an unexpected keyword argument' in str(e): # FIXME: handle in better way
                     raise KeywordArgumentError(e.args[0])
                 else:
                     raise e
