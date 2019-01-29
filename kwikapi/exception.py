@@ -3,7 +3,11 @@ import abc
 
 
 class ResponseError(Exception):
-    pass
+    def __init__(self, response):
+        super(ResponseError, self).__init__(response)
+        self.message = response['message']
+        self.code = response['code']
+        self.callee_error = response['error']
 
 
 class BaseException(Exception):
