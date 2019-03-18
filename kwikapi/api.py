@@ -398,6 +398,8 @@ class BaseRequestHandler(object):
                 function=fn_name,
                 apiid=self.api._id)
 
+        request.log = request.log or DUMMY_LOG
+
         query_string = urlp.query
 
         request.fn_name = fn_name
