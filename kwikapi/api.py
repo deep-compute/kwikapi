@@ -347,11 +347,19 @@ class BaseRequestHandler(object):
     DEFAULT_ERROR_CODE = 50000
 
     def __init__(self, api,
-            default_version=None, default_protocol=DEFAULT_PROTOCOL,
+            default_version=None,
+            default_protocol=DEFAULT_PROTOCOL,
+            pre_call_hook=None,
+            post_call_hook=None,
             log=DUMMY_LOG):
         self.api = api
+
         self.default_version = default_version
         self.default_protocol = default_protocol
+
+        self.pre_call_hook = pre_call_hook
+        self.post_call_hook = post_call_hook
+
         self.log = log
 
         self._protocols = self.PROTOCOLS
@@ -476,6 +484,24 @@ class BaseRequestHandler(object):
         except Exception as e:
             yield self._handle_exception(req, e)
 
+    def _invoke_pre_call_hook(self, request):
+        if not self.pre_call_hook:
+            return
+
+        try:
+            self.pre_call_hook(request)
+        except Exception:
+            request.log.exception('_invoke_pre_call_hook')
+
+    def _invoke_post_call_hook(self, request, result=None, exception=None):
+        if not self.post_call_hook:
+            return
+
+        try:
+            self.post_call_hook(request, result=result, exception=exception)
+        except Exception:
+            request.log.exception('_invoke_post_call_hook')
+
     def handle_request(self, request):
         if self.api._auth:
             request.auth = self.api._auth.authenticate(request)
@@ -491,7 +517,11 @@ class BaseRequestHandler(object):
             # invoke the API function
             tcompute = time.time()
             try:
+                self._invoke_pre_call_hook(request)
                 result = request.fn(**request.fn_params)
+
+                self._invoke_post_call_hook(request, result=result)
+
             except TypeError as e:
                 if 'got an unexpected keyword argument' in str(e): # FIXME: handle in better way
                     raise KeywordArgumentError(e.args[0])
@@ -519,6 +549,8 @@ class BaseRequestHandler(object):
                     **request.metrics)
 
         except Exception as e:
+            self._invoke_post_call_hook(request, exception=e)
+
             m = self._handle_exception(request, e)
             response.write(m, protocol)
 

@@ -1,6 +1,6 @@
 from setuptools import setup, find_packages
 
-version = '0.5.3'
+version = '0.5.4'
 setup(
     name="kwikapi",
     version=version,
@@ -18,7 +18,7 @@ setup(
     'deeputil==0.2.7',
     'numpy==1.15.1',
     'future==0.16.0',
-    'requests==2.18.4',
+    'requests>=2.18.4',
     ],
     extras_require={
         'django': ['kwikapi-django==0.2.5'],
