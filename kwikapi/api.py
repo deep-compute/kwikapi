@@ -278,7 +278,7 @@ class API(object):
                     break
             except TypeError:
                 try:
-                    if _type.__module__ == 'typing':
+                    if _type.__module__ in ('typing', 'builtins'):
                         break
                     else:
                         raise UnsupportedType(_type)
