@@ -520,6 +520,8 @@ class BaseRequestHandler(object):
                 self._invoke_pre_call_hook(request)
                 result = request.fn(**request.fn_params)
 
+                protocol = self._find_request_protocol(request)
+
                 self._invoke_post_call_hook(request, result=result)
 
             except TypeError as e:
