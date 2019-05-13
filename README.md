@@ -356,7 +356,7 @@ True
 > We can also register same methods with same namespace with different versions
 
 ### Customizing request and response
-User can change the response attributes if he wants it
+User can change the response if he wants it
 
 ```python
 >>> import json
@@ -507,16 +507,6 @@ $ wget "http://localhost:8888/api/v1/add" --header="X-KwikAPI-Protocol: messagep
 $ wget "http://localhost:8888/api/v1/subtract" --header="X-KwikAPI-Protocol: json" --post-data '{"a": 10, "b": 20}'
 $ wget "http://localhost:8888/api/v1/add" --header="X-KwikAPI-Protocol: pickle" --post-file /tmp/data.pickle
 $ wget "http://localhost:8888/api/v1/add" --header="X-KwikAPI-Protocol: numpy" --post-file /tmp/data.numpy
-$ wget "http://localhost:8888/api/v1/add?a=10&b=20" --header="X-KwikAPI-Protocol: raw"
-```
-
-#### We can also change outgoing protocol
-ex:
-```python
-class Calc(object):
-    def add(self, req: Request, a: int, b: int) -> int:
-        req.headers['X-KwikAPI-Protocol'] = 'numpy'
-        return a + b
 ```
 
 ### API Doc
