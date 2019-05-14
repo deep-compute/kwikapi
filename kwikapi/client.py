@@ -111,19 +111,18 @@ class Client:
         req = urllib.request.Request(url, data=post_body, headers=headers)
         res = urllib.request.urlopen(req)
 
+        proto = PROTOCOLS[res.headers.get('X-KwikAPI-Protocol', self._protocol)]
+
         if self._stream:
-            proto = PROTOCOLS[self._protocol]
             res = proto.deserialize_stream(res)
             res = Client._extract_stream_response(res, self._raise_exception)
         else:
-            res = self._deserialize_response(res.read(), self._protocol,
-                    self._raise_exception)
+            res = self._deserialize_response(res.read(), proto, self._raise_exception)
 
         return res
 
     @staticmethod
-    def _deserialize_response(data, protocol, raise_exception=True):
-        proto = PROTOCOLS[protocol]
+    def _deserialize_response(data, proto, raise_exception=True):
         r = proto.deserialize(data)
         return Client._extract_response(r, raise_exception)
 
