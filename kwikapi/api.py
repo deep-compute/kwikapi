@@ -125,6 +125,10 @@ class BaseResponse(object):
     def close(self):
         pass
 
+    @abc.abstractproperty
+    def headers(self):
+        pass
+
 class MockRequest(BaseRequest):
 
     def __init__(self, **kwargs):
@@ -153,7 +157,7 @@ class MockRequest(BaseRequest):
 class MockResponse(BaseResponse):
     def __init__(self):
         super().__init__()
-        self.headers = CaseInsensitiveDict()
+        self._headers = CaseInsensitiveDict()
         self.raw_response = None
 
     def write(self, data, protocol, stream=False):
@@ -168,6 +172,10 @@ class MockResponse(BaseResponse):
 
     def close(self):
         pass
+
+    @property
+    def headers(self):
+        return self._headers
 
 class API(object):
     """
@@ -460,9 +468,15 @@ class BaseRequestHandler(object):
 
         return r
 
-    def _find_request_protocol(self, request):
-        protocol = request.headers.get(PROTOCOL_HEADER, self.default_protocol)
+    def _find_request_protocol(self, r):
+        protocol = r.headers.get(PROTOCOL_HEADER, self.default_protocol)
         return self.PROTOCOLS[protocol]
+
+    def _find_response_protocol(self, r):
+        protocol = r.response.headers.get(PROTOCOL_HEADER, None)
+        if protocol:
+            return self.PROTOCOLS[protocol]
+        return self._find_request_protocol(r)
 
     def _handle_exception(self, req, e):
         message_value = e.message if hasattr(e, 'message') else str(e)
@@ -520,7 +534,7 @@ class BaseRequestHandler(object):
                 self._invoke_pre_call_hook(request)
                 result = request.fn(**request.fn_params)
 
-                protocol = self._find_request_protocol(request)
+                protocol = self._find_response_protocol(request)
 
                 self._invoke_post_call_hook(request, result=result)
 

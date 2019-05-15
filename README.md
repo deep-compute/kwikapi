@@ -510,12 +510,12 @@ $ wget "http://localhost:8888/api/v1/add" --header="X-KwikAPI-Protocol: numpy" -
 $ wget "http://localhost:8888/api/v1/add?a=10&b=20" --header="X-KwikAPI-Protocol: raw"
 ```
 
-#### We can also change outgoing protocol
+#### We can also change outgoing/response protocol
 ex:
 ```python
 class Calc(object):
     def add(self, req: Request, a: int, b: int) -> int:
-        req.headers['X-KwikAPI-Protocol'] = 'numpy'
+        req.response.headers['X-KwikAPI-Protocol'] = 'numpy'
         return a + b
 ```
 
