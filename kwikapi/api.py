@@ -546,8 +546,6 @@ class BaseRequestHandler(object):
 
             tcompute = time.time() - tcompute
 
-            response.headers[TIMING_HEADER] = str(tcompute)
-
             # Serialize the response
             if request.fn.__func__.func_info['gives_stream']:
                 result = self._wrap_stream(request, result) if protocol.should_wrap() else result
@@ -555,6 +553,8 @@ class BaseRequestHandler(object):
             else:
                 result = dict(success=True, result=result) if protocol.should_wrap() else result
                 n, t = response.write(result, protocol)
+
+            response.headers[TIMING_HEADER] = str(tcompute + t.value)
 
             request.log.info('kwikapi.handle_request',
                     function=rinfo.function, namespace=rinfo.namespace,
