@@ -554,7 +554,7 @@ class BaseRequestHandler(object):
                 result = dict(success=True, result=result) if protocol.should_wrap() else result
                 n, t = response.write(result, protocol)
 
-            response.headers[TIMING_HEADER] = str(tcompute + t.value)
+            response.headers[TIMING_HEADER] = str(tcompute + t.value + rinfo.time_deserialize)
 
             request.log.info('kwikapi.handle_request',
                     function=rinfo.function, namespace=rinfo.namespace,
