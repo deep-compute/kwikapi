@@ -1,40 +1,43 @@
-language: python
-python:
-- '3.5'
-install:
-- pip install .
-script:
-- python -m doctest -v README.md
+before_install:
+- pip3 install black
 deploy:
 - provider: releases
   skip_cleanup: true
   api_key:
     secure: QcZBC5FRMFhS+DyOR5IzKaOrT9P6fMXkEKtKIDdl/qG/qTKj8fmAGrO4cdQRjysEElLaOtO04xjyNBs5Z+uHLGuZv+w6/D31AnOdDrIuv+96dWRAjqhUubU2yQYBV8eYo22QILXarImBqmjHSv2LKPDapZqutariELpuagE7uMfgftbA1hASSReY9CdXnPvbt3tM2gvvtCFCy1w+AZtEt6uUJcymk8meU4PkL3fyCYXczdx/KTqWQGSOIm6zdEyjgxyaD7qzjqFBHBp6NCXedL0AgDcJ5JcH7nlOJ9LhAu03J8nENvfHwFhxi+GBolB6OQChxapdZhkfCtKHHwWCM7j3Z9LTeZdVHlwU63T49QZJRd8+fHaLKzrE+y746Qg25QqUjw3mwhuxBzdPA+mF0FCsBtQTluhdvzesvaUEfns//m47VRak5yDmY3QIKjECYT4ZkVOVY2PFlNwYX7zFK+O9+RGuZCA8vlG0r7yqQzE70IPVHpAPXQS9leTLMlST+BFQ52MmUkrnm3SZETGyFmw+XG8JORASnXZ+NIaBCdneyfp0W5ArZbihaLTs4PA/uuJwWxS6/JE/oGQpJ1iy6xHyMaYYtxx3hwW1CJ1Aya2taARix+IQAPdilJd0mCeS5KN9mX+a2oJKDrgA6NTt7R8Z9rYRv2s993HbHPCEf3c=
   file:
-    - README.md
-    - setup.py
-    - LICENSE
-    - kwikapi/api.py
-    - kwikapi/__init__.py
+  - README.md
+  - setup.py
+  - LICENSE
+  - kwikapi/api.py
+  - kwikapi/__init__.py
   name: kwikapi-0.5.9
   tag_name: 0.5.9
-  on:
+  true:
     repo: deep-compute/kwikapi
 - provider: pypi
-  distributions: "sdist bdist_wheel"
+  distributions: sdist bdist_wheel
   server: https://test.pypi.org/legacy/
   user: deepcompute
   password:
-    secure: "x/iZP9OKENHUhcJmBGFVmHNqKBcwGopNbaFgrEm8OpqU1DpZwpU7CCdgTFOA5dBmdtSwAyS5y70AnDoqn4xQx6qEpThEQTfkTHZU2pdFkBNviI3xqieVwT+B+cDGIHrmAc+nmIGNv2Koz6Aw4l0InnLXdy2V3gezlsrOYUg5HprGbJzvUDTFr3h0ekXole5likMXUa18Ryv4ewoTESPj9LPkw3QFCdWN9mKTIC2SXUuEK7vfLlZoAORhrP1ZY4q0GD9qgmLYLvEioiGf/zgDCO1paw1dliUEu0YNAVjslhitG+k2COafF3OthMx6E8j7wnJ+p/4mcvq30FTpCoZ+hHzm5/DytO4DAmrkXx21Sn9EuNrI+inJdeEjcJdt6bREbKK15I/rn0J3Q0QZ30nMJzGiJELxIhg08G5t2FXpbpunUiklnPrHY7YY4h9czDOZqOwrWuAj/XdhRwfOmckqtqcXvH0cGfqS2bOAcb/CscCtC43S+cAlhJrJ5ayvAmNlL4RfPIRE6O3FzzpXCwmoOLUKbHSlDAQ3kMzNKh6w0RFcHjXcPVDUxTv4P0arAXY4zR5jG+IqOXQkmId/4MN1d5Q+0lbMJEZ93nf0sMjh03EFYmYMO3ytY2s5Ln13SNeS1PXBNBjm2DTKJ58K9EOc95IGOX4FDmXTCsPsHls7o5M="
-  on:
-    tags: false
+    secure: x/iZP9OKENHUhcJmBGFVmHNqKBcwGopNbaFgrEm8OpqU1DpZwpU7CCdgTFOA5dBmdtSwAyS5y70AnDoqn4xQx6qEpThEQTfkTHZU2pdFkBNviI3xqieVwT+B+cDGIHrmAc+nmIGNv2Koz6Aw4l0InnLXdy2V3gezlsrOYUg5HprGbJzvUDTFr3h0ekXole5likMXUa18Ryv4ewoTESPj9LPkw3QFCdWN9mKTIC2SXUuEK7vfLlZoAORhrP1ZY4q0GD9qgmLYLvEioiGf/zgDCO1paw1dliUEu0YNAVjslhitG+k2COafF3OthMx6E8j7wnJ+p/4mcvq30FTpCoZ+hHzm5/DytO4DAmrkXx21Sn9EuNrI+inJdeEjcJdt6bREbKK15I/rn0J3Q0QZ30nMJzGiJELxIhg08G5t2FXpbpunUiklnPrHY7YY4h9czDOZqOwrWuAj/XdhRwfOmckqtqcXvH0cGfqS2bOAcb/CscCtC43S+cAlhJrJ5ayvAmNlL4RfPIRE6O3FzzpXCwmoOLUKbHSlDAQ3kMzNKh6w0RFcHjXcPVDUxTv4P0arAXY4zR5jG+IqOXQkmId/4MN1d5Q+0lbMJEZ93nf0sMjh03EFYmYMO3ytY2s5Ln13SNeS1PXBNBjm2DTKJ58K9EOc95IGOX4FDmXTCsPsHls7o5M=
+  true:
     branch: master
+    tags: false
 - provider: pypi
-  distributions: "sdist bdist_wheel"
+  distributions: sdist bdist_wheel
   server: https://upload.pypi.org/legacy/
   user: deepcompute
   password:
-    secure: "x/iZP9OKENHUhcJmBGFVmHNqKBcwGopNbaFgrEm8OpqU1DpZwpU7CCdgTFOA5dBmdtSwAyS5y70AnDoqn4xQx6qEpThEQTfkTHZU2pdFkBNviI3xqieVwT+B+cDGIHrmAc+nmIGNv2Koz6Aw4l0InnLXdy2V3gezlsrOYUg5HprGbJzvUDTFr3h0ekXole5likMXUa18Ryv4ewoTESPj9LPkw3QFCdWN9mKTIC2SXUuEK7vfLlZoAORhrP1ZY4q0GD9qgmLYLvEioiGf/zgDCO1paw1dliUEu0YNAVjslhitG+k2COafF3OthMx6E8j7wnJ+p/4mcvq30FTpCoZ+hHzm5/DytO4DAmrkXx21Sn9EuNrI+inJdeEjcJdt6bREbKK15I/rn0J3Q0QZ30nMJzGiJELxIhg08G5t2FXpbpunUiklnPrHY7YY4h9czDOZqOwrWuAj/XdhRwfOmckqtqcXvH0cGfqS2bOAcb/CscCtC43S+cAlhJrJ5ayvAmNlL4RfPIRE6O3FzzpXCwmoOLUKbHSlDAQ3kMzNKh6w0RFcHjXcPVDUxTv4P0arAXY4zR5jG+IqOXQkmId/4MN1d5Q+0lbMJEZ93nf0sMjh03EFYmYMO3ytY2s5Ln13SNeS1PXBNBjm2DTKJ58K9EOc95IGOX4FDmXTCsPsHls7o5M="
-  on:
-    tags: true
+    secure: x/iZP9OKENHUhcJmBGFVmHNqKBcwGopNbaFgrEm8OpqU1DpZwpU7CCdgTFOA5dBmdtSwAyS5y70AnDoqn4xQx6qEpThEQTfkTHZU2pdFkBNviI3xqieVwT+B+cDGIHrmAc+nmIGNv2Koz6Aw4l0InnLXdy2V3gezlsrOYUg5HprGbJzvUDTFr3h0ekXole5likMXUa18Ryv4ewoTESPj9LPkw3QFCdWN9mKTIC2SXUuEK7vfLlZoAORhrP1ZY4q0GD9qgmLYLvEioiGf/zgDCO1paw1dliUEu0YNAVjslhitG+k2COafF3OthMx6E8j7wnJ+p/4mcvq30FTpCoZ+hHzm5/DytO4DAmrkXx21Sn9EuNrI+inJdeEjcJdt6bREbKK15I/rn0J3Q0QZ30nMJzGiJELxIhg08G5t2FXpbpunUiklnPrHY7YY4h9czDOZqOwrWuAj/XdhRwfOmckqtqcXvH0cGfqS2bOAcb/CscCtC43S+cAlhJrJ5ayvAmNlL4RfPIRE6O3FzzpXCwmoOLUKbHSlDAQ3kMzNKh6w0RFcHjXcPVDUxTv4P0arAXY4zR5jG+IqOXQkmId/4MN1d5Q+0lbMJEZ93nf0sMjh03EFYmYMO3ytY2s5Ln13SNeS1PXBNBjm2DTKJ58K9EOc95IGOX4FDmXTCsPsHls7o5M=
+  true:
     branch: master
+    tags: true
+install:
+- pip install .
+language: python
+python:
+- '3.5'
+script:
+- black --check .
+- python -m doctest -v README.md
