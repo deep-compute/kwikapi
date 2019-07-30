@@ -12,17 +12,17 @@ from .utils import get_loggable_params
 
 DUMMY_LOG = Dummy()
 
+
 class DNSCache:
     CACHE_SIZE = 2048
     CACHE_TIMEOUT = 600
 
     def __init__(self):
-        self._cache = ExpiringCache(self.CACHE_SIZE,
-                self.CACHE_TIMEOUT)
+        self._cache = ExpiringCache(self.CACHE_SIZE, self.CACHE_TIMEOUT)
 
     def map_url(self, url):
         scheme, netloc, path, _, query, _ = urlparse(url)
-        _netloc = netloc.split(':', 1)
+        _netloc = netloc.split(":", 1)
         if len(_netloc) > 1:
             host, port = _netloc
         else:
@@ -34,26 +34,38 @@ class DNSCache:
             self._cache.put(host, _host)
 
         if query:
-            path = '{}?{}'.format(path, query)
+            path = "{}?{}".format(path, query)
 
         if port:
-            return '{}://{}:{}{}'.format(scheme, _host, port, path)
+            return "{}://{}:{}{}".format(scheme, _host, port, path)
         else:
-            return '{}://{}{}'.format(scheme, _host, path)
+            return "{}://{}{}".format(scheme, _host, path)
+
 
 class Client:
-    DEFAULT_PROTOCOL = 'pickle'
+    DEFAULT_PROTOCOL = "pickle"
 
-    def __init__(self, url, version=None, protocol=DEFAULT_PROTOCOL,
-            path=None, request='', timeout=None, dnscache=None,
-            headers=None, auth=None, stream=False, log=DUMMY_LOG,
-            raise_exception=True):
+    def __init__(
+        self,
+        url,
+        version=None,
+        protocol=DEFAULT_PROTOCOL,
+        path=None,
+        request="",
+        timeout=None,
+        dnscache=None,
+        headers=None,
+        auth=None,
+        stream=False,
+        log=DUMMY_LOG,
+        raise_exception=True,
+    ):
 
         headers = headers or {}
 
         self._url = url
         self._version = version
-        self._protocol = protocol # FIXME: check validity
+        self._protocol = protocol  # FIXME: check validity
 
         self._path = path or []
         self._request = request
@@ -69,12 +81,20 @@ class Client:
             self._dnscache = DNSCache()
 
     def _get_state(self):
-        return dict(url=self._url, version=self._version,
-            protocol=self._protocol, path=self._path,
-            request=self._request, timeout=self._timeout,
-            dnscache=self._dnscache, headers=self._headers,
-            auth=self._auth, stream=self._stream,log=self._log,
-            raise_exception=self._raise_exception)
+        return dict(
+            url=self._url,
+            version=self._version,
+            protocol=self._protocol,
+            path=self._path,
+            request=self._request,
+            timeout=self._timeout,
+            dnscache=self._dnscache,
+            headers=self._headers,
+            auth=self._auth,
+            stream=self._stream,
+            log=self._log,
+            raise_exception=self._raise_exception,
+        )
 
     def _copy(self, **kwargs):
         _kwargs = self._get_state()
@@ -86,7 +106,7 @@ class Client:
 
         if self._request:
             for hk, hv in self._request.headers.items():
-                if not hk.lower().startswith('x-kwikapi-'):
+                if not hk.lower().startswith("x-kwikapi-"):
                     continue
                 headers[hk] = hv
 
@@ -95,11 +115,11 @@ class Client:
         headers[PROTOCOL_HEADER] = self._protocol
 
         upath = [self._version] + self._path
-        upath = '/'.join(x for x in upath if x)
+        upath = "/".join(x for x in upath if x)
         url = urljoin(self._url, upath)
 
         if get_params:
-            url = '{}?{}'.format(url, urlencode(get_params))
+            url = "{}?{}".format(url, urlencode(get_params))
 
         url = self._dnscache.map_url(url)
         if self._auth:
@@ -111,7 +131,7 @@ class Client:
         req = urllib.request.Request(url, data=post_body, headers=headers)
         res = urllib.request.urlopen(req)
 
-        proto = PROTOCOLS[res.headers.get('X-KwikAPI-Protocol', self._protocol)]
+        proto = PROTOCOLS[res.headers.get("X-KwikAPI-Protocol", self._protocol)]
 
         if self._stream:
             res = proto.deserialize_stream(res)
@@ -128,14 +148,14 @@ class Client:
 
     @staticmethod
     def _extract_response(r, raise_exception=True):
-        success = r['success']
+        success = r["success"]
         if not success:
-            r.pop('success')
+            r.pop("success")
             r = ResponseError(r)
             if raise_exception:
                 raise r
         else:
-            r = r['result']
+            r = r["result"]
 
         return r
 
@@ -158,9 +178,14 @@ class Client:
             # FIXME: support streaming in both directions
             _kwargs = get_loggable_params(kwargs or {})
 
-            self._log.debug('kwikapi.client.__call__',
-                    path=self._path, kwargs=_kwargs,
-                    url=self._url, version=self._version, protocol=self._protocol)
+            self._log.debug(
+                "kwikapi.client.__call__",
+                path=self._path,
+                kwargs=_kwargs,
+                url=self._url,
+                version=self._version,
+                protocol=self._protocol,
+            )
 
             post_body = self._serialize_params(kwargs, self._protocol)
             url, post_body, headers = self._prepare_request(post_body)

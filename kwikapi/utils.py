@@ -1,6 +1,7 @@
 import ast
 import numpy as np
 
+
 def walk_data_structure(d, fn, path=None):
     path = path or []
 
@@ -26,11 +27,12 @@ def walk_data_structure(d, fn, path=None):
     else:
         return fn(d, path)
 
+
 def to_python_type(data):
     def _to_native(v, path):
         if isinstance(v, np.ndarray):
             v = v.tolist()
-        elif type(v).__module__ == 'numpy':
+        elif type(v).__module__ == "numpy":
             v = v.item()
 
         return v
@@ -39,6 +41,7 @@ def to_python_type(data):
 
     return data
 
+
 def liteval(x):
     try:
         x = ast.literal_eval(x)
@@ -46,6 +49,7 @@ def liteval(x):
         pass
 
     return x
+
 
 def get_loggable_params(kwargs):
     _kwargs = {}

@@ -2,8 +2,8 @@ import typing
 
 from .exception import UnknownVersionOrNamespace, UnknownVersion
 
-class ApiDoc(object):
 
+class ApiDoc(object):
     def __init__(self, api_funcs):
         self.api_funcs = api_funcs
 
@@ -13,7 +13,7 @@ class ApiDoc(object):
 
         return t.__name__
 
-    def apidoc(self, version: str=None, namespace: str=None) -> dict:
+    def apidoc(self, version: str = None, namespace: str = None) -> dict:
         versions = {}
         namespaces = {}
 
@@ -26,25 +26,27 @@ class ApiDoc(object):
 
             # FIXME: remove this after 'req' in info is removed/resolved
             fninfo = fninfo.copy()
-            fninfo['info'] = fninfo['info'].copy()
-            fninfo['info']['params'] = fninfo['info']['params'].copy()
-            if 'req' in fninfo['info']:
-                fninfo['info'].pop('req')
+            fninfo["info"] = fninfo["info"].copy()
+            fninfo["info"]["params"] = fninfo["info"]["params"].copy()
+            if "req" in fninfo["info"]:
+                fninfo["info"].pop("req")
 
-            for key in fninfo['info']['params'].keys():
-                _type = fninfo['info']['params'][key]['type']
-                fninfo['info']['params'][key] = fninfo['info']['params'][key].copy()
-                fninfo['info']['params'][key]['type'] = self._type_str(_type)
-            fninfo['info']['return_type'] = self._type_str(fninfo['info']['return_type'])
+            for key in fninfo["info"]["params"].keys():
+                _type = fninfo["info"]["params"][key]["type"]
+                fninfo["info"]["params"][key] = fninfo["info"]["params"][key].copy()
+                fninfo["info"]["params"][key]["type"] = self._type_str(_type)
+            fninfo["info"]["return_type"] = self._type_str(
+                fninfo["info"]["return_type"]
+            )
 
             vfns = versions.get(ver, {})
-            vfns[fn_name] = fninfo['info']
+            vfns[fn_name] = fninfo["info"]
             versions[ver] = vfns
 
             if nsp:
                 key = str((ver, nsp))
                 nsfns = namespaces.get(key, {})
-                nsfns[fn_name] = fninfo['info']
+                nsfns[fn_name] = fninfo["info"]
                 namespaces[key] = nsfns
 
         try:

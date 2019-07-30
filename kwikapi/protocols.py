@@ -8,6 +8,7 @@ import numpy as np
 from .exception import StreamingNotSupported
 from .utils import walk_data_structure, liteval
 
+
 class BaseProtocol(object):
     __metaclass__ = abc.ABCMeta
 
@@ -37,7 +38,7 @@ class BaseProtocol(object):
 
     @staticmethod
     def should_wrap():
-        '''
+        """
         While returning the response the,
         kwikapi will wrap the response as -
         {success: value, result: value}
@@ -45,24 +46,24 @@ class BaseProtocol(object):
         This method, can used in above situation,
         if no wrapping is required,
         override this method in the protocol class.
-        '''
+        """
         return True
 
-class JsonProtocol(BaseProtocol):
 
+class JsonProtocol(BaseProtocol):
     @staticmethod
     def get_name():
-        return 'json'
+        return "json"
 
     @staticmethod
     def serialize(data):
         data = json.dumps(data)
 
-        return data.encode('utf-8')
+        return data.encode("utf-8")
 
     @staticmethod
     def deserialize(data):
-        return json.loads(data.decode('utf-8'))
+        return json.loads(data.decode("utf-8"))
 
     @classmethod
     def deserialize_stream(cls, data):
@@ -71,17 +72,17 @@ class JsonProtocol(BaseProtocol):
 
     @staticmethod
     def get_record_separator():
-        return '\n'
+        return "\n"
 
     @staticmethod
     def get_mime_type():
-        return 'application/json'
+        return "application/json"
+
 
 class MessagePackProtocol(BaseProtocol):
-
     @staticmethod
     def get_name():
-        return 'messagepack'
+        return "messagepack"
 
     @staticmethod
     def serialize(data):
@@ -99,17 +100,17 @@ class MessagePackProtocol(BaseProtocol):
 
     @staticmethod
     def get_record_separator():
-        return ''
+        return ""
 
     @staticmethod
     def get_mime_type():
-        return 'application/x-msgpack'
+        return "application/x-msgpack"
+
 
 class PickleProtocol(BaseProtocol):
-
     @staticmethod
     def get_name():
-        return 'pickle'
+        return "pickle"
 
     @staticmethod
     def serialize(data):
@@ -129,12 +130,13 @@ class PickleProtocol(BaseProtocol):
 
     @staticmethod
     def get_mime_type():
-        return 'application/pickle'
+        return "application/pickle"
+
 
 class RawProtocol(BaseProtocol):
     @staticmethod
     def get_name():
-        return 'raw'
+        return "raw"
 
     @staticmethod
     def serialize(data):
@@ -150,21 +152,21 @@ class RawProtocol(BaseProtocol):
 
     @classmethod
     def get_record_separator(cls):
-        return b''
+        return b""
 
     @staticmethod
     def get_mime_type():
-        return 'application/octet-stream'
+        return "application/octet-stream"
 
     @classmethod
     def should_wrap(cls):
         return False
 
-class NumpyProtocol(BaseProtocol):
 
+class NumpyProtocol(BaseProtocol):
     @staticmethod
     def get_name():
-        return 'numpy'
+        return "numpy"
 
     @staticmethod
     def serialize(data):
@@ -173,31 +175,36 @@ class NumpyProtocol(BaseProtocol):
         def _serialize_cb(v, path):
             if isinstance(v, np.ndarray):
                 buf = v.tobytes()
-                v = dict(__type__='ndarray', shape=v.shape,
-                        dtype=liteval(str(v.dtype)), size=len(buf), index=sum(len(x) for x in arrays))
+                v = dict(
+                    __type__="ndarray",
+                    shape=v.shape,
+                    dtype=liteval(str(v.dtype)),
+                    size=len(buf),
+                    index=sum(len(x) for x in arrays),
+                )
                 arrays.append(buf)
 
             return v
 
         data = walk_data_structure(data, _serialize_cb)
-        data = json.dumps(data).encode('utf8')
-        data = b''.join([data, b'\n'] + arrays)
+        data = json.dumps(data).encode("utf8")
+        data = b"".join([data, b"\n"] + arrays)
         return data
 
     @staticmethod
     def deserialize(data):
-        data, arrays = data.split(b'\n', 1)
-        data = json.loads(data.decode('utf8'))
+        data, arrays = data.split(b"\n", 1)
+        data = json.loads(data.decode("utf8"))
 
         def _deserialize_cb(v, path):
-            if isinstance(v, dict) and v.get('__type__') == 'ndarray':
-                sidx = v['index']
-                eidx = sidx + v['size']
+            if isinstance(v, dict) and v.get("__type__") == "ndarray":
+                sidx = v["index"]
+                eidx = sidx + v["size"]
                 _arr = arrays[sidx:eidx]
-                dtype = v['dtype']
+                dtype = v["dtype"]
                 if isinstance(dtype, list):
                     dtype = [tuple(x) for x in dtype]
-                _arr = np.frombuffer(_arr, dtype=dtype).reshape(v['shape'])
+                _arr = np.frombuffer(_arr, dtype=dtype).reshape(v["shape"])
                 return _arr
 
             return v
@@ -215,14 +222,18 @@ class NumpyProtocol(BaseProtocol):
 
     @staticmethod
     def get_mime_type():
-        return 'application/numpy'
+        return "application/numpy"
 
-PROTOCOLS = dict((p.get_name(), p) for p in [
-    JsonProtocol,
-    MessagePackProtocol,
-    PickleProtocol,
-    NumpyProtocol,
-    RawProtocol,
-])
+
+PROTOCOLS = dict(
+    (p.get_name(), p)
+    for p in [
+        JsonProtocol,
+        MessagePackProtocol,
+        PickleProtocol,
+        NumpyProtocol,
+        RawProtocol,
+    ]
+)
 
 DEFAULT_PROTOCOL = JsonProtocol.get_name()
