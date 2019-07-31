@@ -8,13 +8,15 @@ from .protocols import PROTOCOLS
 from .client import Client, DNSCache
 from . import exception
 
-from .auth import BaseServerAuthenticator, \
-        AuthInfo, \
-        BasicServerAuthenticator, \
-        BearerServerAuthenticator, \
-        HMACServerAuthenticator, \
-        BaseClientAuthenticator, \
-        BasicClientAuthenticator, \
-        BearerClientAuthenticator, \
-        HMACClientAuthenticator, \
-        BaseAuthAPI
+from .auth import (
+    BaseServerAuthenticator,
+    AuthInfo,
+    BasicServerAuthenticator,
+    BearerServerAuthenticator,
+    HMACServerAuthenticator,
+    BaseClientAuthenticator,
+    BasicClientAuthenticator,
+    BearerClientAuthenticator,
+    HMACClientAuthenticator,
+    BaseAuthAPI,
+)

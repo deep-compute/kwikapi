@@ -5,9 +5,9 @@ import abc
 class ResponseError(Exception):
     def __init__(self, response):
         super(ResponseError, self).__init__(response)
-        self.message = response['message']
-        self.code = response['code']
-        self.callee_error = response['error']
+        self.message = response["message"]
+        self.code = response["code"]
+        self.callee_error = response["error"]
 
 
 class BaseException(Exception):
@@ -25,8 +25,10 @@ class BaseException(Exception):
 class BaseServerException(BaseException):
     pass
 
+
 class BaseClientException(BaseException):
     pass
+
 
 class DuplicateAPIFunction(BaseServerException):
     def __init__(self, version, api_fn):
@@ -35,7 +37,10 @@ class DuplicateAPIFunction(BaseServerException):
 
     @property
     def message(self):
-        return '"%s" API function already exists in the version "%s"' % (self.api_fn, self.version)
+        return '"%s" API function already exists in the version "%s"' % (
+            self.api_fn,
+            self.version,
+        )
 
     @property
     def code(self):
@@ -120,14 +125,16 @@ class TypeNotSpecified(BaseServerException):
         return 50007
 
 
-
 class UnknownVersionOrNamespace(BaseException):
     def __init__(self, arg):
         self.arg = arg
 
     @property
     def message(self):
-        return 'No methods associated with this version "%s" or namespace "%s".' % (self.arg[0], self.arg[1])
+        return 'No methods associated with this version "%s" or namespace "%s".' % (
+            self.arg[0],
+            self.arg[1],
+        )
 
     @property
     def code(self):
@@ -159,13 +166,14 @@ class KeywordArgumentError(BaseException):
     def code(self):
         return 50010
 
+
 class AuthenticationError(BaseException):
     def __init__(self, error_type):
         self._type = error_type
 
     @property
     def message(self):
-        return 'Invalid auth type: %s' % self._type
+        return "Invalid auth type: %s" % self._type
 
     @property
     def code(self):
@@ -174,16 +182,16 @@ class AuthenticationError(BaseException):
 
 class NonKeywordArgumentsError(BaseException):
     def __init__(self, non_keyword_args):
-        self.non_keyword_args = ','.join(map(str, non_keyword_args))
-        self.error_value = '[() %s]' % (self.__class__.__name__)
-        response_message = dict(message=self.message,code=self.code,
-                                error=self.error_value)
+        self.non_keyword_args = ",".join(map(str, non_keyword_args))
+        self.error_value = "[() %s]" % (self.__class__.__name__)
+        response_message = dict(
+            message=self.message, code=self.code, error=self.error_value
+        )
         super(NonKeywordArgumentsError, self).__init__(response_message)
-
 
     @property
     def message(self):
-        return 'Found non keyword arguments: %s' % self.non_keyword_args
+        return "Found non keyword arguments: %s" % self.non_keyword_args
 
     @property
     def code(self):
