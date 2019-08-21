@@ -19,6 +19,9 @@ class ApiDoc(object):
 
         # FIXME: Why every time looping when the api method is called.
         for (ver, fn_name, nsp), fninfo in self.api_funcs.items():
+            # We don't need to show apidoc API in  apidoc API results
+            if fn_name == "apidoc":
+                continue
 
             # Some of the types are not json serializable.
             # So we are converting types to strings
