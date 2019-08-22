@@ -562,16 +562,7 @@ To check API methods under specific version and namespace we can provide URL as 
                                        'b': {'default': None,
                                              'required': True,
                                              'type': 'int'}},
-                            'return_type': 'int'},
-                    'apidoc': {'doc': None,
-                               'gives_stream': False,
-                               'params': {'namespace': {'default': None,
-                                                        'required': False,
-                                                        'type': 'str'},
-                                          'version': {'default': None,
-                                                      'required': False,
-                                                      'type': 'str'}},
-                               'return_type': 'dict'}}}}
+                            'return_type': 'int'}}}}
 >>> res['success']
 True
 
