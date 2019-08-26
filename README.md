@@ -24,7 +24,7 @@ from kwikapi import API
 
 # Core logic that you want to expose as a service
 class Calc(object):
-    def add(self, a: int, b: int) -> int:
+    def add(self, a: int=10, b: int=20) -> int:
         return a + b
 
     def subtract(self, a: int, b: int) -> int:
