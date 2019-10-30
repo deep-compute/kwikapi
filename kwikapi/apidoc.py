@@ -11,7 +11,13 @@ class ApiDoc(object):
         if t is None:
             return str(None)
 
-        return t.__name__
+        if hasattr(t, "__name__"):
+            return t.__name__
+        else:
+            try:
+                return t.__repr__()
+            except Exception:
+                return "Unknown"
 
     def apidoc(self, version: str = None, namespace: str = None) -> dict:
         versions = {}
