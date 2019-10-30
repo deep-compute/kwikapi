@@ -1,5 +1,4 @@
-d
-ploy:
+deploy:
 - provider: releases
   skip_cleanup: true
   api_key:
