@@ -16,6 +16,9 @@ Here is an example of how to use `KwikAPI` to expose `Calc` as a service. We wil
 > To use KwikAPI with tornado install `sudo pip3 install kwikapi[tornado]`
 
 ```python
+
+# `calc.py` - A simple calculator as a kwikapi service
+
 import tornado.ioloop
 import tornado.web
 
@@ -49,6 +52,11 @@ if __name__ == "__main__":
     app = make_app()
     app.listen(8888)
     tornado.ioloop.IOLoop.current().start()
+```
+
+#### Run Command
+```
+$ python calc.py run
 ```
 
 Making an API request
