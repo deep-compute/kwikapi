@@ -43,7 +43,7 @@ class DNSCache:
 
 
 class Client:
-    DEFAULT_PROTOCOL = "pickle"
+    DEFAULT_PROTOCOL = "messagepack"
 
     def __init__(
         self,

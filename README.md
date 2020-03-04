@@ -425,7 +425,7 @@ $ wget "http://localhost:8888/api/v1/streaming_request_test" --post-file /tmp/nu
 ```
 
 ### Protocol handling
-KwikAPI supports JSON, Messagepack, Pickle and Numpy protocols
+KwikAPI supports JSON, Messagepack and Numpy protocols
 
 #### KwikAPI also supports custom protocols instead of using existing protocols
 ```python 
@@ -513,7 +513,6 @@ ex:
 ```bash
 $ wget "http://localhost:8888/api/v1/add" --header="X-KwikAPI-Protocol: messagepack" --post-file /tmp/data.msgpack
 $ wget "http://localhost:8888/api/v1/subtract" --header="X-KwikAPI-Protocol: json" --post-data '{"a": 10, "b": 20}'
-$ wget "http://localhost:8888/api/v1/add" --header="X-KwikAPI-Protocol: pickle" --post-file /tmp/data.pickle
 $ wget "http://localhost:8888/api/v1/add" --header="X-KwikAPI-Protocol: numpy" --post-file /tmp/data.numpy
 $ wget "http://localhost:8888/api/v1/add?a=10&b=20" --header="X-KwikAPI-Protocol: raw"
 ```
@@ -612,7 +611,7 @@ print(c.namespace.add(a=10, b=10))
 
 # Parameters can be changed that are passed to the Client object
 
-print(c(version='v2', protocol='pickle').namespace.add(a=10, b=10))
+print(c(version='v2', protocol='messagepack').namespace.add(a=10, b=10))
 ```
 
 Streaming response is handled by passing the parameter `stream` as True.
