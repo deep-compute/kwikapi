@@ -1,7 +1,6 @@
 import ast
 import abc
 import json
-import pickle
 import msgpack
 import numpy as np
 
@@ -42,7 +41,6 @@ class BaseProtocol(object):
         While returning the response the,
         kwikapi will wrap the response as -
         {success: value, result: value}
-
         This method, can used in above situation,
         if no wrapping is required,
         override this method in the protocol class.
@@ -105,32 +103,6 @@ class MessagePackProtocol(BaseProtocol):
     @staticmethod
     def get_mime_type():
         return "application/x-msgpack"
-
-
-class PickleProtocol(BaseProtocol):
-    @staticmethod
-    def get_name():
-        return "pickle"
-
-    @staticmethod
-    def serialize(data):
-        return pickle.dumps(data)
-
-    @staticmethod
-    def deserialize(data):
-        return pickle.loads(data)
-
-    @classmethod
-    def deserialize_stream(cls, data):
-        raise StreamingNotSupported(cls.get_name())
-
-    @classmethod
-    def get_record_separator(cls):
-        raise StreamingNotSupported(cls.get_name())
-
-    @staticmethod
-    def get_mime_type():
-        return "application/pickle"
 
 
 class RawProtocol(BaseProtocol):
@@ -227,13 +199,7 @@ class NumpyProtocol(BaseProtocol):
 
 PROTOCOLS = dict(
     (p.get_name(), p)
-    for p in [
-        JsonProtocol,
-        MessagePackProtocol,
-        PickleProtocol,
-        NumpyProtocol,
-        RawProtocol,
-    ]
+    for p in [RawProtocol, JsonProtocol, NumpyProtocol, MessagePackProtocol]
 )
 
 DEFAULT_PROTOCOL = JsonProtocol.get_name()
