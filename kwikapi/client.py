@@ -143,8 +143,16 @@ class Client:
 
     @staticmethod
     def _deserialize_response(data, proto, raise_exception=True):
+        proto = Client._get_protocol(proto)  # Checking for a valid protocol object
         r = proto.deserialize(data)
         return Client._extract_response(r, raise_exception)
+
+    @staticmethod
+    def _get_protocol(proto):
+        if isinstance(proto, str):
+            return PROTOCOLS[proto]
+        else:
+            return proto
 
     @staticmethod
     def _extract_response(r, raise_exception=True):
