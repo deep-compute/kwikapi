@@ -83,6 +83,10 @@ class BaseRequest(object):
     def headers(self):
         pass
 
+    @abc.abstractproperty
+    def files(self):
+        pass
+
 
 Request = BaseRequest
 
@@ -157,6 +161,10 @@ class MockRequest(BaseRequest):
     @property
     def headers(self):
         return self._request["headers"]
+
+    @property
+    def files(self):
+        return self._request["files"]
 
 
 class MockResponse(BaseResponse):
@@ -490,7 +498,7 @@ class BaseRequestHandler(object):
             except:  # FIXME: bald except!
                 param_vals[key] = val
 
-        if request.method == "POST":
+        if request.method == "POST" and not request._request.files:
             r.method = "POST"
             protocol = self._find_request_protocol(request)
 

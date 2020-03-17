@@ -105,6 +105,7 @@ True
 - Protocol handling
 - API Doc
 - Bulk request handling
+- File upload
 - KwikAPI Client
 - Authentication
 - Custom error codes and messages
@@ -591,6 +592,27 @@ It will be very convenient if the user has facility to make bulk requests.
 When making a large number of requests, the overhead of network latency and HTTP request/response processing
 can slow down the operation. It is convenient and necessary to have a mechanism to sent a set of requests in
 bulk.
+
+### File upload
+We can also upload files to the server.
+
+**Server**
+```python
+# Class which registers with API
+class File:
+    def get_file(self, req: Request) -> int:
+        for field_name, files in req.files.items():
+            for info in files:
+                filename, content_type = info["filename"], info["content_type"]
+                body = info["body"]
+```
+
+Note: As of now `File upload` is supported only in tornado
+
+**Client**
+```bash
+$ curl -F "field_name=@/file.txt;filename=name.txt" "http://localhost:8888/api/v1/get_file"
+```
 
 ### KwikAPI Client
 `KwikAPI` provides client tool which will help in making calls to server. The `KwikAPI Client` will take
