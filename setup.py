@@ -17,7 +17,7 @@ setup(
         "msgpack-python==0.5.1",
         "deeputil==0.2.9",
         "numpy==1.15.1",
-        "future==0.16.0",
+        "future==1.0.0",
         "requests>=2.18.4",
     ],
     extras_require={
